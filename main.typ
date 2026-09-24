@@ -45,5 +45,7 @@
 // ============================================================================
 
 // You can organize your content with parts
-#part("First Part")
+#part("Introduction to Molecular Biology")
 #include "chapters/L1.typ"
+#part("Machine Learining basics")
+#part("Machine Learining and AI applications to Bioinformatics")
