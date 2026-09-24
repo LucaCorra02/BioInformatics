@@ -27,23 +27,10 @@ Every component of a cell (Eukaryotic) swin inside a liquid called cytoplasm. Th
   There is a theory that mitochondria were once free prokaryotic cells, they entered into a eukaryotic cell and formed a *symbiotic relationship* with it by specializing in one specific task. This theory is supported by the fact that mitochondria have their own DNA and ribosomes, which are similar to those found in prokaryotic cells.
 
 - _nucleus_: It is the control center of the cell. It contains the *DNA* (deoxyribonucleic acid) which is the genetic material of the cell.
-  
+
   #note()[
     There is the DNA in a prokaryotic cell but it is not contained in a nucleus. Instead, it is found in the cytoplasm in a region called the nucleoid.
   ]
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #note()[
   A protein is similar to another if the sequence of the amino acids is similar. The similarity can be measured by the number of overlapping amino acids in the two sequences.
