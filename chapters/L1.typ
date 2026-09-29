@@ -23,7 +23,7 @@ A cell is the basic unit of life. It is the smallest unit that can carry out all
 
 #figure()[
   #align(center)[
-    #image("/assets/image.png", width: 70%)
+    #image("../img/cells.png", width: 70%)
   ]
 ]
 
