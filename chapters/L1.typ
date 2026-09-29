@@ -2,36 +2,36 @@
 
 = Bioinformatics
 
-Bioinformatics is the study of the inherent structures of the biological informationa and the biological systems. A sinonymous of bioinformatics is computational biology, which is the study of the biological systems using computational methods but are basically the same.
+Bioinformatics is the study of biological information and biological systems using computational methods. Computational biology is a closely related field that uses computational approaches to study biological systems, but the two terms are not exact synonyms.
 
-This discipline is not study only human biology but also the biology of other organisms, such as plants, animals, and microorganisms. For example it studies cells like:
-- *Eukaryotic cells*: which are cells that have a nucleus and other organelles, such as mitochondria and chloroplasts.
-- *Bacteria*: which are unicellular organisms that lack a nucleus and other organelles.
-- *Archaea*: which are unicellular organisms that are similar to bacteria but have a different cell wall structure and different metabolic pathways.
+This discipline does not study only human biology, but also the biology of other organisms, such as plants, animals, and microorganisms. For example, it studies eukaryotic cells and prokaryotic organisms such as:
+- *Eukaryotic cells*: cells that have a nucleus and other membrane-bound organelles, such as mitochondria and chloroplasts.
+- *Bacteria*: unicellular organisms that lack a membrane-bound nucleus and other membrane-bound organelles.
+- *Archaea*: unicellular prokaryotic organisms that are distinct from bacteria and have different cell envelope structures and metabolic pathways.
 
-Studyng other organisms than humans is important because it helps us understand the human biology better.
+Studying organisms other than humans is important because it helps us understand human biology better.
 
 == Cells
 
-A cells is the basic unit of life. It is the smallest unit that can carry out all the functions of life, such as metabolism, growth, and reproduction. We have two type of cells:
-- *Prokaryotic cells*: primitive cells that lack a nucleus and other organelles. They are found in bacteria and archaea.
-- *Eukaryotic cells*: complex cells that have a nucleus and other organelles.
+A cell is the basic unit of life. It is the smallest unit that can carry out all the functions of life, such as metabolism, growth, and reproduction. There are two main types of cells:
+- *Prokaryotic cells*: cells that lack a membrane-bound nucleus. They are found in bacteria and archaea.
+- *Eukaryotic cells*: cells that have a nucleus and other membrane-bound organelles.
 
 #note()[
   Not all the organisms are made of cells. For example, viruses are not made of cells but they can infect cells and use their machinery to reproduce.
 ]
 
-Every component of a cell (Eukaryotic) swin inside a liquid called cytoplasm. The cytoplasm is a gel-like substance that fills the cell and contains all the organelles and other components of the cell. Every orgamelle has a specific function that is essential for the cell to survive and reproduce:
-- _mithochondria_: They produce energy for the cell by converting glucose and oxygen into ATP (adenosine triphosphate) through cellular respiration.
+The components of a eukaryotic cell are suspended in a gel-like substance called the cytoplasm. The cytoplasm contains the cytosol and the organelles outside the nucleus. Each organelle has a specific function that is essential for the cell to survive and reproduce:
+- _mitochondria_: They produce ATP (adenosine triphosphate) through cellular respiration, using nutrients and oxygen.
 
-  There is a theory that mitochondria were once free prokaryotic cells, they entered into a eukaryotic cell and formed a *symbiotic relationship* with it by specializing in one specific task. This theory is supported by the fact that mitochondria have their own DNA and ribosomes, which are similar to those found in prokaryotic cells.
+  The endosymbiotic theory proposes that mitochondria evolved from free-living prokaryotic cells that were engulfed by an ancestral eukaryotic cell. They formed a *symbiotic relationship* with the host cell and eventually specialized in specific functions. This theory is supported by the fact that mitochondria have their own DNA and ribosomes, which resemble those found in prokaryotic cells.
 
 - _nucleus_: It is the control center of the cell. It contains the *DNA* (deoxyribonucleic acid) which is the genetic material of the cell.
 
   #note()[
-    There is the DNA in a prokaryotic cell but it is not contained in a nucleus. Instead, it is found in the cytoplasm in a region called the nucleoid.
+    Prokaryotic cells also contain DNA, but it is not enclosed in a nucleus. Instead, the chromosome is located in a region of the cytoplasm called the nucleoid.
   ]
 
 #note()[
-  A protein is similar to another if the sequence of the amino acids is similar. The similarity can be measured by the number of overlapping amino acids in the two sequences.
+  Two proteins are considered similar when their amino acid sequences share significant similarity. This similarity is usually assessed by aligning the sequences and evaluating measures such as sequence identity, similarity, and alignment score; it is not determined simply by counting overlapping amino acids.
 ]
