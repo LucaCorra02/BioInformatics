@@ -11,7 +11,7 @@ This discipline does not study only human biology, but also the biology of other
 
 Studying organisms other than humans is important because it helps us understand human biology better.
 
-== Cells
+= Cells
 
 A cell is the basic unit of life. It is the smallest unit that can carry out all the functions of life, such as metabolism, growth, and reproduction. There are two main types of cells:
 - *Prokaryotic cells*: cells that lack a membrane-bound nucleus. They are found in bacteria and archaea.
@@ -23,11 +23,11 @@ A cell is the basic unit of life. It is the smallest unit that can carry out all
 
 #figure()[
   #align(center)[
-    #image("/assets/image.png", width: 70%)
+    #image("../img/cells.png", width: 70%)
   ]
 ]
 
-=== Eukaryotic Cells
+== Eukaryotic Cells
 
 The components of a eukaryotic cell are suspended in a gel-like substance called the *cytoplasm*. The cytoplasm contains the cytosol and the organelles outside the nucleus. Each organelle has a specific function that is essential for the cell to survive and reproduce:
 - *_mitochondria_*: They produce ATP (adenosine triphosphate) through cellular respiration, using nutrients and oxygen. This protein is essential for the cell to carry out its functions and survive.
