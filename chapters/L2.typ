@@ -131,7 +131,15 @@ In eukaryotic cells, DNA is mainly kept in the nucleus, while translation occurs
 
 - *Ribosomal RNA (rRNA)* combines with proteins to build ribosomes. It is not merely structural: part of the ribosome's catalytic activity is performed by rRNA. It not transport information, but it is essential for the translation of mRNA into protein.
 
-- *Transfer RNA (tRNA)* carries a specific amino acid. Its anticodon pairs with the appropriate codon in the mRNA, allowing the ribosome to add the correct amino acid.
+- *Transfer RNA (tRNA)* carries a specific amino acid. Its anticodon pairs with the appropriate codon in the mRNA, allowing the ribosome to add the correct amino acid. The anticodon is a sequence of three nucleotides that codes a specific aminoacid.
+
+== Central Dogma
+
+The process of transcription and translation is often described as the *central dogma of molecular biology*. It explains how information flows from DNA to RNA to protein:
+- First the DNA sequence of a gene is *transcribed* into an RNA molecule. The gene's DNA sequence is copied into a complementary RNA sequence by RNA polymerase. In this way the information can leave the nucleus without risking damage to the original DNA.
+
+- Then the RNA sequence is *translated* into a protein sequence.
+
 
 === Translation: Building a Protein
 
@@ -142,6 +150,10 @@ The translation operation is performed by the *ribosome*, which act as a tiny pr
 - *P Site (Protein holding)*: This is where the growing product is held. The tRNA in this station anchors the entire chain of building blocks that have already been assembled.
 
 - *E Site (Exit)*: Once a tRNA has dropped off its cargo, it gets pushed to this exit door to leave the factory and go find more materials.
+
+#note()[
+  We can read the same mRNA with different ribosomes at the same time in parallel. This is called a *polysome* or *polyribosome*. It allows the cell to make many copies of a protein from one mRNA molecule.
+]
 
 The ribosome repeats the following cycle during elongation:
 1. *Delivery*: A new, loaded tRNA lands in the empty A site.
@@ -183,6 +195,25 @@ A useful functional division is:
 - *Regulatory ncRNAs*, which control *gene expression* at epigenetic, transcriptional, or post-transcriptional levels. Examples include miRNA and siRNA, which can reduce expression of target mRNAs, as well as piRNA, lincRNA, circRNA, enhancer RNA, and natural antisense transcripts.
 
   Regulatory ncRNAs are often grouped by length into *short ncRNAs* (less than $200$ nucleotides) and *long ncRNAs* (more than $200$ nucleotides). This threshold is a practical classification rather than a strict boundary, and function cannot be inferred from length alone.
+
+== The Genetic Code
+
+The genetic code is the set of rules that defines how the sequence of nucleotides in a *gene* is translated into the sequence of amino acids in a protein. Each amino acid is specified by a sequence of three nucleotides, called a *codon*. The genetic code is nearly universal, meaning that it is used by almost all organisms on Earth.
+
+A gene structure is composed of:
+- *Transcibed region*: The part of the gene that is copied into RNA. It includes both coding and non-coding sequences. Trought a process called *splicing*, the non-coding sequences (introns) are removed from the RNA transcript, and the coding sequences (exons) are joined together to form the *mature mRNA* that will be translated into protein.
+
+  In the mauture mRNA we can have an *untranslated region* (UTR) at the 5' end and another UTR at the 3' end. These regions are not translated into protein, but they can contain regulatory elements that influence mRNA stability, localization, and translation efficiency.
+
+  #note()[
+    The *splice* is importan because *it allows a single gene to produce multiple protein (mRNA)* isoforms through alternative splicing. In some case we can decided to include or exclude certain exons, which can change the protein's function or localization.
+  ]
+
+- *Promoter region*: This region it's not transcribed into RNA. It sort a *switch* that controls when and where the gene is expressed. In other words, it decide when a transcription factor binds to the promoter, it can either activate or repress transcription.
+
+#warning()[
+  Note that only the *exon* regions of a gene will composed the coding sequence that composed the mRNA template for translation a specific protein. The introns and UTRs are not translated into protein, but they can have important regulatory roles.
+]
 
 = Proteins and Amino Acids
 
@@ -235,7 +266,22 @@ Think of protein folding as a 4-step origami process:
   #image("../img/aminoacidstructure.png", width: 60%)
 ]
 
-== The Genetic Code
+#note()[
+  The functions of a protein mostly depend on its tertiary and quaternary structures.
+]
+
+== Protein Function
+
+The function of a protein may include:
+- *Information processing*: Proteins can act as receptors, channels, and enzymes that help cells sense and respond to their environment. For example, Cell cycle life regulation.
+
+- *Metabolism*: Proteins can catalyze chemical reactions, transport molecules, and store energy. For example, enzymes that break down food molecules.
+
+- *Cell structure*: Proteins can provide mechanical support, shape, and movement to cells and tissues.
+
+
+
+== The Codon Table
 
 During translation, the ribosome reads mRNA *three nucleotides* at a time. Each triplet is a codon. Because RNA has four possible bases and a codon has three positions, there are:
 $
