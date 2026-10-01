@@ -68,3 +68,30 @@ We can have different types of mutations:
 
 - We can have also some *mutations* that involve the translocation of a inteire section *of chromosome* to another location. Of course this mutation involve a lot of genes, and can have a large impact on the organism's fitness.
 
+== Transcription regulation
+
+// Riguardare da slide e video
+
+Transcription factors are proteins that bind to specific DNA sequences and regulate the transcription of genes (by determinating if a gene is turning on or not). They are releated to a lot of diseases, including cancer.
+
+Understanding how transcription factors work leads to the creation of new drugs that can target specific transcription factors and modulate their activity.
+
+#note()[
+  The number of gene is not the primary determinant of the complexity of an organism. The *regulation of gene expression* is a key factor in determining the complexity of an organism.
+]
+
+The transcription factors regulate the RNA polymerase, which is the enzyme that synthesizes RNA from a DNA template. This enzyme is "stupid" it not recognize the promoter region, and it needs the transcription factors to bind to the DNA and recruit the RNA polymerase to the correct location and in the right time.
+
+The things are more complex, we have also some *enhancer*. They are regolatory reagion that can interact with the promoter region of a gene to increase its transcription. Usually this part are distant from the gene they regulate, and they can be located upstream or downstream of the gene. They can work true thanks to the *DNA looping*, which allows the repressor to come into close proximity with the promoter region and inhibit transcription.
+
+We have:
+- *Promoter*: regulatory region located near the gene that serves as a binding site for transcription factors and RNA polymerase.
+
+- *Enhancer*: this regions can enanche the transcription of a gene by interacting with the promoter region and recruiting transcription factors and RNA polymerase.
+
+- *Repressor*: regulatory region far from the gene that can work as a silencer, inhibiting the transcription of the gene.
+
+//riguardare
+Different genes can be regulated by some common transcription factors, which can lead to coordinated expression of genes that are involved in the same biological process.
+
+
