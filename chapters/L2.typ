@@ -133,6 +133,34 @@ In eukaryotic cells, DNA is mainly kept in the nucleus, while translation occurs
 
 - *Transfer RNA (tRNA)* carries a specific amino acid. Its anticodon pairs with the appropriate codon in the mRNA, allowing the ribosome to add the correct amino acid. The anticodon is a sequence of three nucleotides that codes a specific aminoacid.
 
+== The Genetic Code <gen-structure>
+
+The genetic code is the set of rules that defines how the sequence of nucleotides in a *gene* is transcribed into a complementary RNA sequence. The RNA sequence is then translated into a specific sequence of amino acids, which will fold into a functional protein.
+
+Each amino acid is specified by a sequence of *three nucleotides*, called a *codon*. The genetic code is nearly universal, meaning that it is used by almost all organisms on Earth.
+
+#figure()[
+  #align(center)[
+    #image("../img/dna-composition.png", width: 55%)
+  ]]<dna-composition>
+
+A gene structure is composed of:
+- *Transcibed region*: The part of the gene that is copied into RNA. It includes both coding and non-coding sequences. Trought a process called *splicing*, the non-coding sequences (*introns*) are removed from the RNA transcript, and the coding sequences (*exons*) are joined together to form the *mature mRNA* that will be translated into protein.
+
+  In the mauture mRNA we can have an *untranslated region* (UTR) at the 5' end and another UTR at the 3' end. These regions are not translated into protein, but they can contain regulatory elements that influence mRNA stability, localization, and translation efficiency.
+
+  #note()[
+    The *splice* is importan because *it allows a single gene to produce multiple protein (mRNA)* isoforms through alternative splicing. In some case we can decided to include or exclude certain exons, which can change the protein's function or localization.
+  ]
+
+- *Promoter region*: This region it's not transcribed into RNA. It sort a *switch* that controls when and where the *gene is expressed*. In other words, it decide when a transcription factor binds to the promoter, it can either activate or repress transcription.
+
+#warning()[
+  Note that *only* the *exon* regions of a gene will *composed the coding sequence* that composed the mRNA template for translation a specific protein. The introns and UTRs are not translated into protein, but they can have important regulatory roles.
+]
+
+
+
 == Central Dogma
 
 The process of transcription and translation is often described as the *central dogma of molecular biology*. It explains how information flows from DNA to RNA to protein:
@@ -169,7 +197,7 @@ The ribosome repeats the following cycle during elongation:
 
 Translation begins at a start codon, usually AUG, and ends when a stop codon enters the A site. Stop codons are recognized by release factors rather than by tRNAs.
 
-=== Transcription of mRNA
+=== Transcription of mRNA <dna-trans>
 
 The transcription is the process of copying a gene's DNA sequence into an RNA molecule. It is performed by *RNA polymerase*, which reads one strand of the DNA and synthesizes a complementary RNA strand. The RNA transcript is complementary to the DNA template strand and nearly identical to the coding strand, except that RNA has uracil (U) instead of thymine (T). RNA polymerase locally opens the DNA and builds RNA in the $5' "to" 3'$ direction:
 
@@ -196,24 +224,6 @@ A useful functional division is:
 
   Regulatory ncRNAs are often grouped by length into *short ncRNAs* (less than $200$ nucleotides) and *long ncRNAs* (more than $200$ nucleotides). This threshold is a practical classification rather than a strict boundary, and function cannot be inferred from length alone.
 
-== The Genetic Code
-
-The genetic code is the set of rules that defines how the sequence of nucleotides in a *gene* is translated into the sequence of amino acids in a protein. Each amino acid is specified by a sequence of three nucleotides, called a *codon*. The genetic code is nearly universal, meaning that it is used by almost all organisms on Earth.
-
-A gene structure is composed of:
-- *Transcibed region*: The part of the gene that is copied into RNA. It includes both coding and non-coding sequences. Trought a process called *splicing*, the non-coding sequences (introns) are removed from the RNA transcript, and the coding sequences (exons) are joined together to form the *mature mRNA* that will be translated into protein.
-
-  In the mauture mRNA we can have an *untranslated region* (UTR) at the 5' end and another UTR at the 3' end. These regions are not translated into protein, but they can contain regulatory elements that influence mRNA stability, localization, and translation efficiency.
-
-  #note()[
-    The *splice* is importan because *it allows a single gene to produce multiple protein (mRNA)* isoforms through alternative splicing. In some case we can decided to include or exclude certain exons, which can change the protein's function or localization.
-  ]
-
-- *Promoter region*: This region it's not transcribed into RNA. It sort a *switch* that controls when and where the gene is expressed. In other words, it decide when a transcription factor binds to the promoter, it can either activate or repress transcription.
-
-#warning()[
-  Note that only the *exon* regions of a gene will composed the coding sequence that composed the mRNA template for translation a specific protein. The introns and UTRs are not translated into protein, but they can have important regulatory roles.
-]
 
 = Proteins and Amino Acids
 

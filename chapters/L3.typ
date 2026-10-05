@@ -51,7 +51,7 @@ The effects of a mutation can influence whether it is retained in a population:
 
 == Conservation of DNA
 
-As shown in the figure below @dna-composition, the DNA of an organism is composed of *coding* and *non-coding* regions.
+As shown in the figure @dna-composition, the DNA of an organism is composed of *coding* and *non-coding* regions. For more details, see the section on the genetic structure @gen-structure.
 
 *Coding regions*: Some parts of DNA sequences are *highly conserved* across different species, especially when they contain essential information. They are often associated with *genes* that encode proteins. These regions are important for the survival of the organism. In humans protein-coding sequences account for roughly $1-2%$ of the genome, although the broader genomic regions associated with genes occupy a larger fraction.
 
@@ -64,10 +64,6 @@ As shown in the figure below @dna-composition, the DNA of an organism is compose
 ]
 
 
-#figure()[
-  #align(center)[
-    #image("../img/dna-composition.png", width: 50%)
-  ]]<dna-composition>
 
 
 === Types of mutations
@@ -78,7 +74,7 @@ We can have different types of mutations:
 - *Insertions*: One or more nucleotides are added to the DNA sequence. If the number of inserted nucleotides is not a multiple of three, this can lead to a *frameshift mutation*, which changes the reading frame of the codons and may result in a substantially different amino acid sequence.
 
   #note()[
-    This type of mutation can have a large impact on the protein's function. It can be more disruptive than a single-nucleotide substitution, although its effect depends on its location and length.
+    This type of mutation can have a *large impact* on the protein's function. It can be more disruptive than a single-nucleotide substitution, although its effect depends on its location and length.
   ]
 
 - *Deletions*: One or more nucleotides are removed from the DNA sequence. As with insertions, a deletion whose length is not a multiple of three can cause a frameshift and result in a loss of nucleotides.
@@ -89,28 +85,50 @@ We can have different types of mutations:
 
 == Transcription regulation
 
-// Riguardare da slide e video
+Transcription (see @dna-trans) is the process by which the information in a gene's DNA sequence is copied into RNA. The *regulation of transcription* is a key mechanism for controlling gene expression and determining which genes are active in a cell at any given time.
 
-Transcription factors are proteins that bind to specific DNA sequences and regulate gene transcription by helping determine whether a gene is turned on or off. They are related to many diseases, including cancer.
+The transcription is determined by a specific enzyme called *RNA polymerase*, which reads the DNA template and synthesizes a complementary RNA strand. This RNA polymerase binds to a specific region of the DNA called the *promoter*, which is located near the gene. The promoter contains specific sequences that signal the start of transcription and help position the RNA polymerase correctly.
 
-Understanding how transcription factors work leads to the creation of new drugs that can target specific transcription factors and modulate their activity.
+However, RNA polymerase does not work alone. It requires the assistance of *transcription factors*, which are proteins that help during this process.
+
+This factor are related to many diseases, including cancer. Understanding how transcription factors work leads to the creation of new drugs that can target specific transcription factors and modulate their activity.
 
 #note()[
   The number of gene is not the primary determinant of the complexity of an organism. The *regulation of gene expression* is a key factor in determining the complexity of an organism.
 ]
 
+=== Transcription factors
+
 Transcription factors regulate the activity of RNA polymerase, the enzyme that synthesizes RNA from a DNA template. In eukaryotes, RNA polymerase generally requires transcription factors to recognize and bind the promoter efficiently, and to recruit or position the polymerase at the correct location and time.
 
-The situation is more complex because genes can also be regulated by *enhancers*. These are regulatory regions that can interact with a gene's promoter to increase its transcription. Enhancers are often located far from the genes they regulate, either upstream or downstream. They can act through *DNA looping*, which brings the enhancer-bound activator proteins into close proximity to the promoter region.
+The situation is more complex because genes can also be regulated by *enhancers* (see @dna-factors). These are *regulatory regions* that can interact with a gene's promoter to *increase its transcription*. Enhancers are often located far from the genes they regulate, either upstream or downstream. They can act through *DNA looping*, which brings the enhancer-bound activator proteins into close proximity to the promoter region.
+
+#figure()[
+  #align(center)[
+    #image("../img/dna-factors.png", width: 60%)
+  ]]<dna-factors>
 
 We have:
-- *Promoter*: regulatory region located near the gene that serves as a binding site for transcription factors and RNA polymerase.
+- *Promoter*: regulatory region located near the gene that serves as a binding site for transcription factors and RNA polymerase. It is essential for *initiating transcription*.
 
-- *Enhancer*: a regulatory region that can enhance the transcription of a gene by interacting with its promoter and recruiting transcription factors and RNA polymerase.
+- *Enhancer*: a regulatory region that can increase the power of transcription of a gene. It uses DNA looping to bring the enhancer-bound activator proteins into close proximity to the promoter region, which can enhance.
 
-- *Silencer*: a regulatory DNA region that can inhibit the transcription of a gene, often by binding repressor proteins.
+- *Silencer*: a regulatory DNA region that can inhibit the transcription of a gene, often by binding repressor proteins. When a silencer is active, it can *prevent the binding of transcription factors* or RNA polymerase to the promoter, thereby reducing or blocking transcription.
 
-//riguardare
-Different genes can be regulated by some common transcription factors, which can lead to coordinated expression of genes that are involved in the same biological process.
+=== Coordinated Gene Expression
+
+Genes that are involved in the same biological process (e.g., metabolic pathways, immune responses, or cell division) are often *distributed* across different chromosomes.
+
+To function properly, they must be *activated at the exact same time*. They achieve this synchronization by sharing specific regulatory sequences (binding motifs) in their promoters or enhancers. A single *transcription factor* can recognize these shared motifs and bind to all of them simultaneously. This allows the cell to actuate an entire "network" of genes in a highly coordinated manner with a single regulatory trigger.
+
+
+#note()[
+  Because transcription factors act as master switches, their precise *regulation is vital*. If a genetic mutation alters a transcription factor—for example, locking it into a permanently "active" state—it can force the continuous transcription of genes that drive cell multiplication. This uncontrolled, perpetual cellular division is a fundamental hallmark of cancer and other severe developmental diseases.
+]
+
+Due to their central role in driving diseases, defective transcription factors are critical pharmacological targets. Historically, they have been considered "undruggable" because their protein structures are relatively flat and lack the deep binding pockets typical of enzymes that standard drugs target. However, modern pharmacology is actively developing novel therapeutic strategies (such as targeted protein degraders or inhibitors that prevent the factor from binding to DNA) to selectively block or modulate these malfunctioning regulators.
+
+
+
 
 
