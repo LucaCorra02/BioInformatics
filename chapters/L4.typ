@@ -1,173 +1,290 @@
 #import "../template.typ": *
 
 = Data in bioinformatics
-Example of data in bioinformatics include:
-- *Sequences*: DNA, RNA, and protein sequences are fundamental data types in bioinformatics. They can be represented as strings of characters, where each character corresponds to a nucleotide or amino acid.
 
-- *Expression data*: usually represented as matrices. They represent the expression levels of genes or proteins across different conditions or samples. The quantity of transciptes a certain gene produce a different value in the matrix. The rows of the matrix represent genes or proteins, while the columns represent different samples or conditions.
+Bioinformatics works with several kinds of biological data. The most common
+examples are:
+- *Sequences*: DNA, RNA, and protein sequences are represented as strings of
+  symbols. Each symbol denotes a nucleotide or an amino acid.
+- *Gene-expression data*: these data are usually represented as matrices. The
+  rows correspond to genes (or other measured features), the columns correspond
+  to samples or experimental conditions, and each entry is an expression
+  measurement.
+- *Protein-interaction networks*: these data are represented as graphs. Nodes
+  denote proteins and edges denote physical or functional interactions.
 
-- *Proteion Networks*: they represent the interactions between proteins in a biological system. They can be represented as graphs, where nodes represent proteins and edges represent interactions between them.
+== DNA and RNA sequences
 
-== DNA Sequences
-
-DNA sequence are very long, if he consider the entire human genome we can find 3 billion base pairs.
-
-RNA sequnce are usually shorter than DNA sequences, but they can still be quite long.
+DNA sequences can be very long. The human haploid genome contains approximately
+3.2 billion base pairs. RNA molecules are generally shorter than chromosomes,
+although some transcripts can still be very long.
 
 #note()[
-  RNA sequence are *not stable* they can degradete to their nucleotides, while DNA sequences are more stable and can be preserved for longer periods of time.
+  RNA is chemically less stable than DNA and is more susceptible to degradation
+  by ribonucleases. For this reason, RNA samples require careful handling and
+  are often converted into complementary DNA (cDNA) for library preparation
+  and sequencing.
 ]
 
-Usually the RNA is converted to *complementary DNA* (cDNA) using reverse transcription, which allows for more stable storage and analysis of the genetic information. We can transform RNA into cDNA using the reverse process of transcription, wich usually involves some retro-transcription enzymes.
+The conversion of RNA into cDNA is performed by *reverse transcription*, which
+uses a reverse-transcriptase enzyme. This reaction is not the reverse of
+transcription in a strict biochemical sense: transcription produces RNA from a
+DNA template, whereas reverse transcription produces DNA from an RNA template.
 
-In order to analyze the RNA sequence it maybe too small to be sequenced directly, so it is often *amplified* using techniques such as polymerase chain reaction (PCR) or reverse transcription PCR (RT-PCR).
+Modern sequencing technologies read relatively short fragments, or *reads*,
+rather than an entire chromosome in one operation. A sequencing experiment
+therefore produces many overlapping reads. Computational methods align the
+reads to a reference genome or assemble them from their overlaps. Genome
+assembly is challenging because of repetitive regions, sequencing errors, and
+uneven coverage; it is not generally an unsolved problem, but high-quality
+assemblies remain difficult for some organisms and genomic regions.
 
+=== Population data
 
-From a stem point we only able to analyze some small sequence length (less than 1 million). We need to *split the genome* in small part. To achive that we need to use some *algorithms* that are able to reconstruct the genome from the small parts, this is a very complex problem and it is still an open problem in bioinformatics.
+Population genomics compares genomic data from many individuals. It can reveal
+genetic variation and help identify variants associated with disease risk,
+treatment response, or other phenotypes.
 
-=== Population Data
+Genomes from different human populations are highly similar, but they differ at
+many positions. A *single-nucleotide polymorphism* (SNP) is a variation at one
+nucleotide position that is common enough to be considered polymorphic in a
+population. Other types of variation include insertions, deletions, and
+structural variants.
 
-We are able to have a lot of data from the population, for example we can have the genome of a lot of people, this is very useful to understand the *genetic variation* in the population and to identify genetic factors that contribute to disease susceptibility or drug response.
-
-Even if the genome of different people are very similar (indipendent from region and race), there are some differences expecially in the position of the nucleotides. This is collected in the *Single Nucleotide Polymorphisms* (SNPs).
-
-Most of the type this variation is phisiological, variability is very important because it allows the evolution of the species, but some of this variation can be pathological and can lead to disease. The study of bad variation is very important to understand the disease and to develop new therapies.
+Most genetic variation is neutral or has a small effect. Some variants are
+beneficial, while others are pathogenic or increase susceptibility to a
+disease. Studying this variation helps us understand evolution and disease
+mechanisms and can support the development of diagnostic tests and therapies.
 
 == Gene expression
 
-Gene expression is the proccess that measure the quantity of mRNA produced by a gene in a certain cell or tissue. The level of expression of a gene can vary depending on the cell type, developmental stage, and environmental conditions.
+*Gene expression* is the process by which the information in a gene is used to
+produce a functional product, such as an RNA molecule or a protein. In many
+experiments, expression is estimated by measuring the abundance of mRNA
+transcripts in a cell or tissue. Expression levels can vary with cell type,
+developmental stage, environmental conditions, and disease state.
 
-What is the level of expression of a certain gene? How much each gene are transcribed in a certain cell? To answer this question we have two different approaches: *microarray* and *RNA-seq*. Both of them are able to measure the expression level of genes in a certain cell or tissue.
+Two widely used approaches for measuring transcript abundance are
+*microarrays* and *RNA sequencing* (RNA-seq).
 
-=== Microarray
+=== Microarrays
 
-Microarray is a technique that allows to measure the expression level of thousands of genes simultaneously. It is based on the hybridization of cDNA to a microarray chip that contains thousands of probes, each corresponding to a specific gene. The intensity of the signal from each probe is proportional to the amount of cDNA that hybridizes to it, which reflects the expression level of the corresponding gene.
+A microarray measures the abundance of thousands of known transcripts at the
+same time. The array contains many short DNA probes, each designed to
+hybridize with a particular target sequence. RNA is extracted from the sample,
+converted into labeled cDNA, and hybridized to the probes. A scanner measures
+the fluorescence emitted by each spot. After background correction and
+normalization, the intensity provides a relative estimate of the abundance of
+the corresponding transcript.
 
-Then we can extract the RNA from a cell. If a specific gene is expressed in that cell, the RNA will be chained to the cDNA (usually is chained to one specific cDNA, but it can be chained to multiple cDNA). The cDNA is then labeled with a fluorescent dye, and then we can measure the intensity of the signal from each probe, which reflects the expression level of the corresponding gene.
-
-Finally we can read the flourescent signal from the microarray chip using a scanner (laser), if there is no RNA the light will be very low, if there is a lot of RNA the light will be very high. The intensity of the signal from each probe is proportional to the amount of cDNA that hybridizes to it, which reflects the expression level of the corresponding gene. Each expression level is represented as a number, usually between 0 and 1:
-- $0$: means no expression
-- $1$: means maximum expression.
+Microarray measurements are not intrinsically restricted to the interval
+$[0, 1]$. Their numerical scale depends on the scanner, preprocessing, and
+normalization method. The values are usually interpreted comparatively, for
+example to determine whether a gene is expressed more highly in one condition
+than in another.
 
 === RNA-seq
 
-Another way to represent the expression level is to use a *heatmap*, where each gene is represented as a row and each sample is represented as a column. The color of each cell in the heatmap represents the expression level of the corresponding gene in the corresponding sample, with red indicating high expression and blue indicating low expression. this representation is very useful to visualize and compare the expression levels of genes across different samples (different patients, different tissues, different conditions, etc.).
+In RNA-seq, RNA is converted into a sequencing library and read by a
+high-throughput sequencing instrument. The reads are aligned to a reference
+genome or transcriptome, or assembled when no suitable reference is available.
+The number of reads assigned to a gene or transcript provides an estimate of
+its abundance. Appropriate normalization is necessary because samples can
+contain different total numbers of reads and genes can have different lengths.
 
+Expression data are often visualized with a *heatmap*: rows represent genes,
+columns represent samples, and colors represent normalized expression values.
+The color scale is relative to the chosen transformation and does not
+necessarily mean that red is always high expression or that blue is always low
+expression.
 
 == Protein expression
 
 #note()[
-  The expression protein depends on the expression of the gene, if a gene is expressed in a certain cell, the protein will be produced in that cell. The level of protein expression can also vary depending on the cell type, developmental stage, and environmental conditions.
+  Protein abundance is influenced by gene expression, but it is not determined
+  by it alone. Translation efficiency, protein degradation, post-translational
+  modifications, and cellular localization can all change the amount and
+  activity of a protein.
 ]
 
-At the end we have data represented as a matrix, where:
-- rows: represent genes or proteins
-- columns: represent different samples or conditions. Each columns can correspond to a di
-- $L_(i,j)$: Each cell in the matrix represents the expression level of a specific gene $i$ or protein in a specific sample $j$ or condition.
+Protein-abundance data can also be represented as a matrix:
+- rows represent proteins;
+- columns represent samples, conditions, or time points;
+- $L_(i,j)$ represents the measured abundance of protein $i$ in sample $j$.
 
-== 3D structures
+== Three-dimensional structures
 
-They represent the 3D structure of proteins, which is important for understanding their function and interactions with other molecules. They can be represented as 3D coordinates of atoms in the protein, which can be visualized using molecular visualization software.
+The three-dimensional structure of a protein is important for understanding its
+function, binding sites, and interactions with other molecules. A structure can
+be represented by the three-dimensional coordinates of its atoms, together with
+information about atom types, bonds, and sometimes experimental uncertainty.
+Structures can be determined experimentally, for example by X-ray
+crystallography, nuclear magnetic resonance, or cryo-electron microscopy.
 
 #warning()[
-  Some tecnologies are able to alter the 3D structure of proteins, for example the *crystalization*.
+  The experimental structure is not necessarily identical to the structure
+  adopted in every cellular condition. Crystal packing, temperature, ligand
+  binding, and other experimental factors can influence the observed
+  conformation.
 ]
 
-Nowdays ML methods are able to predict the 3D structure based on the sequence of the protein (for example `AlphaFold`).
+Machine-learning methods can also predict structures from amino-acid sequences.
+For example, AlphaFold predicts protein structures using information learned
+from sequence and structural data. Predictions are useful hypotheses, but their
+confidence can vary across different regions of a protein.
 
 == Interactions
 
-Is important to study the intercations because the function of a specific cell depends on wow the proteins interact with each other.
+Studying interactions is important because the function of a cell depends on
+coordinated relationships among proteins, nucleic acids, metabolites, and other
+components. Interaction data can be represented as networks, in which nodes
+represent biological entities and edges represent physical or functional
+relationships.
 
 #example()[
-  For example, if we consider the transcription factor, it is a protein that binds to specific DNA sequences and regulates the transcription of genes (promoter). The function of the transcription factor depends on its interactions with other proteins, such as co-activators or co-repressors, which can modulate its activity and specificity.
+  A transcription factor binds specific DNA sequences near a gene and
+  regulates transcription. Its activity can also depend on interactions with
+  co-activators, co-repressors, chromatin-remodeling complexes, and signaling
+  proteins. These interactions affect the specificity and strength of
+  regulation.
 ]
 
-== Example of use
+== Examples of use
 
-We can use this kind of data to achive the *personalized medicine*, for example we can use the expression data to identify the genes that are differentially expressed between healthy and diseased tissues, which can help to identify potential therapeutic targets or biomarkers for disease diagnosis and prognosis.
+These data can support *personalized medicine*. For example, genomic variants,
+expression profiles, and clinical information can be combined to identify
+biomarkers, predict disease risk, select a treatment, or anticipate an
+individual's response to a drug.
 
-Another use of gene expression data is to cluster this genes based on their expression patterns across different patients or conditions, which can help to identify co-regulated genes or pathways that are involved in specific biological processes or disease states.
+Gene-expression data can be used to identify genes that are differentially
+expressed between healthy and diseased tissues. These genes may suggest
+biological mechanisms, therapeutic targets, or diagnostic and prognostic
+biomarkers. Genes can also be clustered according to their expression patterns
+across samples, helping identify co-regulated genes and biological pathways.
 
-We can also developed a *system biology*. Instread of studying a single gene or protein, we can study the interactions between genes and proteins in a biological system. We study the biological system as a whole block.
+In *systems biology*, we study a biological system as a whole rather than
+considering only one gene or protein. Integrating sequences, expression,
+protein measurements, structures, interaction networks, and clinical data can
+provide a more complete description of the system.
 
-= Machine Learning in Bioinformatics
+= Machine learning in bioinformatics
 
-Machine learning alghorithms take in input a set of data and a set of output (example related to the input data) and produce a model that is able to predict the output based on the input data. The model is trained on the input data and the output data, and then it can be used to make predictions on new input data.
+Machine-learning algorithms learn a model from data. In supervised learning,
+the input data are paired with target outputs; the model learns a relationship
+that can be used to make predictions for new inputs. In other settings, the
+algorithm identifies structure in unlabeled data or learns from feedback.
 
 == Challenges
 
-The main challenges in applying machine learning to bioinformatics include:
-- *High-dimensional data*: Bioinformatics data is often high-dimensional, with many features. This can lead to overfitting and poor generalization performance if not properly addressed.
+Bioinformatics datasets present several challenges:
+- *High dimensionality*: there may be many measured features and relatively few
+  samples, which increases the risk of overfitting.
+- *Limited labels*: biological labels can be expensive, noisy, or unavailable.
+  Unsupervised and semi-supervised methods can help exploit unlabeled data.
+- *Noise and missing values*: measurements can contain experimental noise,
+  batch effects, missing entries, or sequencing errors.
+- *Structured data*: sequences, graphs, matrices, and three-dimensional
+  structures require representations that preserve their relevant structure.
+- *Integration of data types*: genomic, transcriptomic, proteomic, structural,
+  and clinical data differ in scale, resolution, and measurement error.
+- *Data leakage and confounding*: information from the test set or from
+  correlated samples must not accidentally enter training, and technical
+  effects must be distinguished from biological effects.
 
-- *More or less labeled data*: In many cases, bioinformatics data is unlabeled or partially labeled, which can make it difficult to train supervised machine learning models. This can be addressed using unsupervised or semi-supervised learning techniques.
+These challenges do not imply that standard algorithms are always unusable, nor
+are they all NP-hard problems. Instead, the choice of representation, model,
+preprocessing, and validation strategy must reflect the biological data and the
+question being studied.
 
-- Noisy data, structured data, and missing data: We can have sequence, graph and matrix data, and they can be noisy or incomplete.
+== Representation and evaluation
 
-- *Combination of different data types*: Bioinformatics data can come from multiple sources and modalities, such as genomic, transcriptomic, proteomic, and clinical data. Integrating these different data types can be challenging but can also provide a more comprehensive understanding of biological systems.
+Machine-learning models can use different representations:
+- *Decision trees*: interpretable models that recursively split the data and
+  can be used for classification and regression.
+- *Rule sets*: collections of if-then rules that make predictions or describe
+  associations in the data.
+- *Bayesian networks*: probabilistic graphical models that represent
+  dependencies among variables and support prediction and inference.
+- *Neural networks*: flexible models that learn nonlinear relationships through
+  layers of parameterized transformations.
 
-The majority of standard algorithms are not able to handle this kind of data, they are np-hard problems. We need to develop new algorithms that are able to handle this kind of data. In this case we use machine learning methods, that are able to learn from the data and make predictions or decisions based on it.
+Model performance must be evaluated on data that were not used to fit the
+model. A validation set can be used for model selection, while a final test set
+should be kept separate for an unbiased estimate of generalization. Common
+metrics include:
+- *accuracy*: the fraction of correct predictions;
+- *precision*: the fraction of predicted positives that are actually positive;
+- *recall*: the fraction of actual positives that are detected;
+- *F1 score*: the harmonic mean of precision and recall;
+- *area under the ROC curve (AUROC)*: a threshold-independent summary of the
+  ranking of positive examples above negative examples.
 
-== Representation and Evaluation
+The appropriate metric depends on the biological cost of false positives and
+false negatives. Cross-validation can estimate performance when the dataset is
+small, but related samples must be kept in the same split to avoid overly
+optimistic results.
 
-We can represent the alghorithms in different ways:
-- *Decision trees*: they are a simple and interpretable way to represent the decision-making process of a machine learning model. They can be used for both classification and regression tasks.
+== Types of learning
 
-- *Set of rules*: we can learn rules from the data that can be used to make predictions or decisions. This can be done using techniques such as association rule mining or rule-based learning.
+The main types of machine learning are:
+- *Supervised learning*: the model is trained with labeled input-output pairs.
+  It is commonly used for classification and regression.
+- *Unsupervised learning*: the model receives no target labels and learns
+  patterns such as clusters, low-dimensional representations, or anomalies.
+- *Semi-supervised learning*: the model uses a smaller labeled dataset together
+  with a larger unlabeled dataset.
+- *Reinforcement learning*: an agent interacts with an environment and learns a
+  policy by maximizing cumulative rewards. It is mainly suited to sequential
+  decision-making problems.
 
-- *Bayesian networks*: they are a probabilistic graphical model that can be used to represent the relationships between variables in a biological system. They can be used for both prediction and inference tasks.
+=== Supervised learning
 
-- *Neural networks*: they are a powerful and flexible way to represent complex relationships between variables in a biological system.
+Let $f: X -> Y$ be the unknown target function that maps an input from the
+space $X$ to an output in the space $Y$. A training set consists of pairs
+$(x_i, y_i)$, where $x_i in X$ and $y_i in Y$. A learning algorithm uses these
+examples to construct a hypothesis $g: X -> Y$ that approximates $f$ and
+generalizes to unseen inputs.
 
-To evaluate the performance of a machine learning model (also use during the train process), we can use different metrics, such as: accuracy, precision, recall, F1 score, and area under the receiver operating characteristic (ROC) curve. These metrics can be used to assess the model's ability to make accurate predictions on new data.
+If $Y$ is a discrete set of labels, the task is called *classification*. If
+$Y$ is continuous, the task is called *regression*. In practice, the training
+examples may contain measurement noise, so requiring $g(x_i) = y_i$ for every
+training example is not always appropriate.
 
-== Types of Learning
+=== Unsupervised learning
 
-There is different types of learning in machine learning, each with its own strengths and weaknesses. The main types of learning are:
-- *Supervised learning*: In supervised learning, the model is trained on a labeled dataset, where the input data is paired with the corresponding output labels. The goal is to *learn a mapping* from the input data to the output labels, so that the model can make accurate predictions on new, unseen data. Supervised learning is commonly used for classification and regression tasks.
-
-- *Unsupervised learning*: In unsupervised learning, the model is trained on an unlabeled dataset, where the input data does not have corresponding output labels. The goal is to *learn the underlying structure* or patterns in the data, such as clusters or latent representations. Unsupervised learning is commonly used for clustering, dimensionality reduction, and anomaly detection tasks.
-
-- *Semi-supervised learning*: In semi-supervised learning, the model is trained on a combination of labeled and unlabeled data. The goal is to leverage the unlabeled data to improve the model's performance on the labeled data. Semi-supervised learning is commonly used when labeled data is scarce or expensive to obtain.
-
-- *Reinforcement learning*: In reinforcement learning, the model learns to make decisions by interacting with an environment and receiving feedback in the form of rewards or penalties. The goal is to learn a policy that maximizes the cumulative reward over time. Reinforcement learning is commonly used for sequential decision-making tasks, such as game playing, robotics, and autonomous systems.
-
-=== Supervised Learning
-
-The learning algorithms should induce a representation of a function that maps the input data to the output labels starting from a set of training examples. The goal is to learn a function that can generalize well to new, unseen data
-
-Consider $f: X->Y$: the target function that we want to learn, and $X$ is the input space and $Y$ is the output space. The *hypothesis* function $g$ is learned from a set of training examples, which consist of input-output pairs $(x_i, y_i)$, where $x_i in X$ and $y_i in Y$.
-
-If $Y$ is a discrete set of labels, the task is called *classification*, while if $Y$ is a continuous set of values, the task is called *regression*.
-
-=== Unsupervised Learning
-
-We want to *learn the underlying structure* or patterns in the data, such as clusters or latent representations. The goal is to find a representation of the data that captures its essential characteristics and can be used for downstream tasks, such as clustering, dimensionality reduction, or anomaly detection.
+In unsupervised learning, the input data have no corresponding target labels.
+The goal is to discover useful structure, such as groups of similar samples,
+low-dimensional representations, or unusual observations.
 
 #informally()[
-  We have some points in a space and we want to find some clusters of points that are similar to each other. We can use different algorithms to find the clusters, such as k-means, hierarchical clustering, or DBSCAN.
+  Imagine points in a space and ask which points are similar to one another.
+  Algorithms such as k-means, hierarchical clustering, and DBSCAN use
+  different definitions of similarity to identify groups.
 ]
 
 #note()[
-  In the process of gropu the points we can use different metrics to measure the similarity between points, such as Euclidean distance, cosine similarity, or Jaccard similarity. The choice of metric can have a significant impact on the resulting clusters and their interpretability.
+  Similarity may be measured with Euclidean distance, cosine similarity, or
+  Jaccard similarity, among other choices. The metric and its scaling can
+  substantially affect the clusters and their biological interpretation.
 ]
 
 == Loss function
 
 #example()[
-  In input we have a couple (x,t) where $x in R^d$ is a vecotr of $d$ number. Each number represent the expression level of a gene in a certain sample. $t$ is a label that represent the desire of the patient, for example if the patient is sick or healthy.
+  Suppose that $x in RR^d$ is a vector containing the expression levels of
+  $d$ genes in one sample, and that $t in {0, 1}$ indicates whether the sample
+  comes from a healthy or diseased patient. We want to learn a classifier
+  $g: RR^d -> {0, 1}$ from a dataset
+  $D = {(x_i, t_i)}_(i=1)^n$.
 
-
-  We want to find a function $f: R^d -> {0,1}$ that maps the input vector $x$ to the output label $t$. Throught a learning algorithm $L$ and a set of data $D = {(x_i, t_i)}_{i=1}^n$ we want to find a hypothesis function $g: R^d -> {0,1}$ that approximates the target function $f$. For each data we want:
+  A *loss function* $L(g(x_i), t_i)$ measures the error of a prediction. The
+  empirical risk is the average loss on the training set:
   $
-    g(x_i) = t_i, forall i = 1, ..., n
+    R_"emp"(g) = 1/n sum_(i=1)^n L(g(x_i), t_i).
   $
-
-  The objective is to *minimize* the *empirical risk*, which is the average loss over the training examples:
-  $
-    R_"emp" = 1/n sum_(i=1)^n L(g(x_i), t_i)
-  $
-  The loss function measures the discrepancy between the predicted output $g(x_i)$ and the true output $t_i$. Thir risk goes from 0 to 1, where 0 means perfect prediction and 1 means worst prediction.
+  The learning algorithm chooses model parameters that minimize this quantity,
+  possibly together with a regularization term. The loss does not necessarily
+  range from $0$ to $1$: squared error, absolute error, cross-entropy, and
+  zero-one loss have different scales. Lower loss means better agreement with
+  the targets according to the chosen definition.
 ]
-
-//guardare slide loss function
