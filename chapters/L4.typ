@@ -22,60 +22,49 @@ although some transcripts can still be very long.
 #note()[
   RNA is chemically less stable than DNA and is more susceptible to degradation
   by ribonucleases. For this reason, RNA samples require careful handling and
-  are often converted into complementary DNA (cDNA) for library preparation
-  and sequencing.
+  are often converted into *complementary DNA* (cDNA) for library preparation and sequencing.
 ]
 
-The conversion of RNA into cDNA is performed by *reverse transcription*, which
-uses a reverse-transcriptase enzyme. This reaction is not the reverse of
-transcription in a strict biochemical sense: transcription produces RNA from a
-DNA template, whereas reverse transcription produces DNA from an RNA template.
+The conversion of RNA into cDNA is performed by *reverse transcription*, which uses a reverse-transcriptase enzyme.
 
-Modern sequencing technologies read relatively short fragments, or *reads*,
-rather than an entire chromosome in one operation. A sequencing experiment
-therefore produces many overlapping reads. Computational methods align the
-reads to a reference genome or assemble them from their overlaps. Genome
-assembly is challenging because of repetitive regions, sequencing errors, and
-uneven coverage; it is not generally an unsolved problem, but high-quality
-assemblies remain difficult for some organisms and genomic regions.
+#warning()[
+  This reaction is not the reverse of transcription in a strict biochemical sense: transcription produces RNA from a DNA template, while reverse transcription produces DNA from an RNA template. The two processes are catalyzed by different enzymes and have different mechanisms.
+]
 
-=== Population data
+Modern sequencing technologies read relatively short fragments, or *reads*, rather than an entire chromosome in one operation. For this reason, a sequencing experiment therefore produces many overlapping reads.\
+The main problem is to assemble the reads into a complete sequence. This can be done by aligning the reads to a reference genome or by assembling them de novo from their overlaps.
 
-Population genomics compares genomic data from many individuals. It can reveal
-genetic variation and help identify variants associated with disease risk,
-treatment response, or other phenotypes.
+Genome assembly is challenging because of repetitive regions, sequencing errors, and uneven coverage; it is not generally an unsolved problem, but high-quality assemblies remain difficult for some organisms and genomic regions.
 
-Genomes from different human populations are highly similar, but they differ at
-many positions. A *single-nucleotide polymorphism* (SNP) is a variation at one
-nucleotide position that is common enough to be considered polymorphic in a
-population. Other types of variation include insertions, deletions, and
-structural variants.
+== Population data
 
-Most genetic variation is neutral or has a small effect. Some variants are
-beneficial, while others are pathogenic or increase susceptibility to a
-disease. Studying this variation helps us understand evolution and disease
+Population genomics compares *genomic data from many individuals*. It can reveal genetic variation and help identify variants associated with disease risk, treatment response, or other phenotypes.
+
+Genomes from different human populations are *highly similar*, but they differ at many positions. A *single-nucleotide polymorphism* (SNP) is a variation at one nucleotide position that is common enough to be considered polymorphic in a population. Other types of variation include insertions, deletions, and structural variants.
+
+Most genetic variation is neutral or has a small effect. Some variants are beneficial, while others are pathogenic or increase susceptibility to a disease. Studying this variation helps us understand evolution and disease
 mechanisms and can support the development of diagnostic tests and therapies.
 
 == Gene expression
 
-*Gene expression* is the process by which the information in a gene is used to
-produce a functional product, such as an RNA molecule or a protein. In many
-experiments, expression is estimated by measuring the abundance of mRNA
-transcripts in a cell or tissue. Expression levels can vary with cell type,
-developmental stage, environmental conditions, and disease state.
+*Gene expression* is the process by which the information in a gene is used to produce a functional product, such as an RNA molecule or a protein. In many experiments *expression* is estimated by *measuring the abundance of mRNA* transcripts in a cell or tissue. Expression levels can vary with cell type, developmental stage, environmental conditions, and disease state.
 
-Two widely used approaches for measuring transcript abundance are
-*microarrays* and *RNA sequencing* (RNA-seq).
+Two widely used approaches for measuring transcript abundance are:
+- *microarrays*
+- *RNA sequencing* (RNA-seq).
 
 === Microarrays
 
-A microarray measures the abundance of thousands of known transcripts at the
-same time. The array contains many short DNA probes, each designed to
-hybridize with a particular target sequence. RNA is extracted from the sample,
-converted into labeled cDNA, and hybridized to the probes. A scanner measures
-the fluorescence emitted by each spot. After background correction and
-normalization, the intensity provides a relative estimate of the abundance of
-the corresponding transcript.
+A microarray measures the abundance of thousands of known transcripts at the same time.
+
+The array contains many short DNA probes, each designed to hybridize with a particular target sequence. RNA is extracted from the sample, converted into labeled cDNA, and hybridized to the probes. A scanner measures
+the fluorescence emitted by each spot. After background correction and normalization, the intensity provides a relative estimate of the abundance of the corresponding transcript.
+
+#figure[
+  #image("/assets/image.png", width: 60%)
+]
+
+
 
 Microarray measurements are not intrinsically restricted to the interval
 $[0, 1]$. Their numerical scale depends on the scanner, preprocessing, and
