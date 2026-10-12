@@ -2,7 +2,19 @@
 
 = Supervised machine learning
 
+Usually during the training phase we have only a limited number of examples, and we want to learn a model that is able to generalize well on unseen data. The main goal is to minimize the *expected risk*, that is the expected error on unseen data.
+
 == Loss function
+
+Suppose that we have a dataset of $D$ examples, where for each input $x_i$ we have a corresponding target $t_i$:
+$
+  D = {(x_1, t_1), (x_2, t_2), ..., (x_n, t_n)}.
+$
+the main goal is to learn a function $g$ that maps inputs to targets, $g: X -> T$. We also want a function $g$ that garantees a good approximation $g(x_1) = t_1, dots, g(x_n) = t_n$. To achieve this, we need to define a *loss function* $L(g(x_i), t_i)$ that measures the *error of a prediction*. The empirical risk is the average loss on the training set:
+$
+  R_"emp"(g) = 1/n sum_(i=1)^n "Loss"(g(x_i), t_i).
+$
+The loss function is a *non-negative* function that quantifies the difference between the predicted value and the true target value. The choice of loss function depends on the specific problem and the type of data.
 
 #example()[
   Suppose that $x in RR^d$ is a vector containing the expression levels of
@@ -23,50 +35,63 @@
   better agreement with the targets according to the chosen definition.
 ]
 
-If we knew the true joint probability distribution $p(x, t)$ of the data and
-the labels, we could compute the optimal classifier. For zero-one loss, this
-is the *Bayes classifier*: the classifier that minimizes the probability of
-classification error.
-
-In practice, we do not know the true distribution, so we have to estimate it
-from the available data. We can use a parametric model $p(x, t | theta)$,
-where $theta$ denotes the parameters of the model.
-
-#note()[
-  In practice, we can only estimate the expected error. We do not observe all
-  possible data points, and therefore we do not know the complete data
-  distribution.
-]
-
-The main goal is to construct a model that generalizes well to unseen data
-without overfitting the training data. The model should learn the underlying
-structure of the data and make accurate predictions on new examples.
-
 == Estimating the expected risk
 
-We can express an upper bound on the expected risk as
+In the previous section, we defined the empirical risk as the average loss on the training set. However, we are interested in the *expected risk*, which is the *expected loss on unseen data*.
+
+*Learning* $f: R^d -> C$ is realized with:
+- A learning algorithm $L$ that approximates the function $g$ that belongs to a set of functions $G$ (the hypothesis space):
+  $
+    g: R^d times Omega -> C
+  $
+  $Omega$ are the learning parameters that are optimized during the training phase.
+
+- A training set $D = {(x_i, t_i)}_(i=1)^n$ of $n$ examples drawn from an unknown distribution $p(x, t)$.
+
+  #note()[
+    If we knew the true joint probability distribution $p(x, t)$ of the data and
+    the labels, we could compute the optimal classifier. For zero-one loss, this
+    is the *Bayes classifier*: the classifier that minimizes the probability of
+    classification error.
+  ]
+
+In practice, we do *not know* the true distribution, so we have to estimate it
+from the available data. We can use a parametric model $p(x, t | omega)$,
+where $omega$ denotes the parameters of the model. We want to minimize:
+- The emperical risk $R_"emp" (omega)$
+
+- The *expected risk* $R(omega)$, which is the expected loss on unseen data:
 $
-  R(omega) <= R_"emp"(omega) + phi(h, m),
+  R(omega) = integral integral "Loss"(mr(g(x, omega)), t) * mb(p(x, t)) "dx" "dt".
 $
-where $h$ is a measure of model complexity, $m$ is the number of training
-examples, and $phi(h, m)$ generally increases with complexity and decreases
-as the number of examples increases. Thus, for a fixed complexity, having more
-training examples makes the bound smaller.
+where:
+- $mr(g(x, omega))$ is the prediction of the model for input $x$ and parameters $omega$.
+- $mb(p(x, t))$ is the density probability function of the data and the labels. It model in the real world how much it's likely to observe a certain input $x$ and its corresponding label $t$.
 
-For good generalization, we therefore need a sufficiently large training set.
-The complexity $h$ can be related to the number of parameters or to a more
-general capacity measure of the model. The more complex the model is, the more
-data we need to estimate it reliably. If the model has many parameters and the
-training set is small, it can overfit the training data.
+#warning()[
+  Since the true distribution $p(x, t)$ is unknown, we cannot compute the expected risk directly. Instead, we use the *empirical risk as an approximation* (risk only on training data) and rely on statistical learning theory to provide *bounds* on the expected risk based on the empirical risk and the complexity of the model.
+]
 
-If the complexity is high, the empirical risk tends to be low, because a
-complex model can fit the training examples more closely. This does not
-necessarily imply a low expected risk on unseen data.
+=== Upper bound on the expected risk
 
-#note()[
-  This upper bound may not be tight: it can be far from the actual expected
-  risk. In practice, it is often too loose to be used directly, so we use
-  empirical methods to estimate the generalization error.
+Since we are not able to compute the expected risk directly, we can use an upper bound on the expected risk based on the empirical risk and the complexity of the model. This is a fundamental concept in statistical learning theory:
+$
+  R(omega) <= R_"emp" (omega) + phi(h, m),
+$
+where: 
+- *$h$*: is a measure of *model complexity*
+- *$m$*: is the *number of training
+examples*
+- *$phi(h, m)$*: it's a function that depends on the complexity ($h$) and the number of training examples ($m$). It is called the *generalization bound*.
+
+  #note()[
+    - *$h$* indicates the ability of the model to fit a wide range of functions. $phi(h, m)$ *increases* with $h$: more complex models have a higher risk of overfitting, they work well on the training data but may not generalize well to unseen data.
+
+    - *$m$* indicates the number of training examples. $phi(h, m)$ *decreases* with $m$: more training examples provide more information about the underlying distribution, which helps to reduce the risk of overfitting.
+  ]
+
+#warning()[
+  This upper bound *may not be tight*: it can be far from the actual expected risk. In practice, it is often too loose to be used directly, so we use empirical methods to estimate the generalization error.
 ]
 
 == K-nearest neighbors
@@ -183,12 +208,12 @@ the desired numerical tolerance.
 
 1. Initialize the weights $w_i$ randomly or with small values.
 2. Repeat until a stopping condition is met:
-   1. Initialize the gradient $Delta w_i = 0$ for all $1 <= i <= d$.
-   2. For each training example $(x_k, t_k)$:
-      1. Compute the prediction $y_k$.
-      2. For each weight $w_i$, accumulate the gradient contribution
-         $Delta w_i += -(t_k - y_k) x_(k i)$.
-   3. Update each weight with $w_i <- w_i - eta Delta w_i$.
+  1. Initialize the gradient $Delta w_i = 0$ for all $1 <= i <= d$.
+  2. For each training example $(x_k, t_k)$:
+    1. Compute the prediction $y_k$.
+    2. For each weight $w_i$, accumulate the gradient contribution
+      $Delta w_i += -(t_k - y_k) x_(k i)$.
+  3. Update each weight with $w_i <- w_i - eta Delta w_i$.
 
 Possible stopping conditions include:
 - a maximum number of iterations is reached;
@@ -245,7 +270,7 @@ propagates this information backward through the hidden layers.
   $
     (partial f(g(x))) / (partial x)
     = (partial f(g(x))) / (partial g(x))
-      * (partial g(x)) / (partial x).
+    * (partial g(x)) / (partial x).
   $
   Backpropagation applies this rule repeatedly to the sequence of layers.
 ]
