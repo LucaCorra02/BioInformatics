@@ -1,282 +1,401 @@
 #import "../template.typ": *
 
-If we know the perfect $p(x,t)$, so the join probability distribution of the data and the labels, we can compute the optimal classifier , wich is a optimal bayes classifier, that is the classifier that minimize the probability of error.
+= Supervised machine learning
 
-We are not able to know the perfect $p(x,t)$, so we have to estimate it from the data. We can use a parametric model $p(x,t|theta)$, where $theta$ are the parameters of the model.
+== Loss function
 
-#note()[
-  In pratice we can only do an estimation of the estimed error, because we don't know all the universe of the data and the distribution function.
+#example()[
+  Suppose that $x in RR^d$ is a vector containing the expression levels of
+  $d$ genes in one sample, and that $t in {0, 1}$ indicates whether the sample
+  comes from a healthy or a diseased patient. We want to learn a classifier
+  $g: RR^d -> {0, 1}$ from a dataset
+  $D = {(x_i, t_i)}_(i=1)^n$.
+
+  A *loss function* $L(g(x_i), t_i)$ measures the error of a prediction. The
+  empirical risk is the average loss on the training set:
+  $
+    R_"emp"(g) = 1/n sum_(i=1)^n L(g(x_i), t_i).
+  $
+  The learning algorithm chooses the model parameters that minimize this
+  quantity, possibly together with a regularization term. The loss does not
+  necessarily range from $0$ to $1$: squared error, absolute error,
+  cross-entropy, and zero-one loss have different scales. A lower loss means
+  better agreement with the targets according to the chosen definition.
 ]
 
-The main goal is to construct a model that is able to generalize well on unseen data expect overfitting the training data. The model should be able to learn the underlying distribution of the data and make predictions on new data.
+If we knew the true joint probability distribution $p(x, t)$ of the data and
+the labels, we could compute the optimal classifier. For zero-one loss, this
+is the *Bayes classifier*: the classifier that minimizes the probability of
+classification error.
 
-== Estimation of the expected risk
-
-We have an *upper bound* of the expected risk:
-$
-  R(omega) <= R_"emp"(omega) + phi (h/m)
-$
-$phi$ is a function that depends on the complexity of the model $omega$ and the number of training samples ($m$). This is a monotone decreasing function, having a lot of example, make the $phi$ smaller.\
-For having a good generalization we need to have a big training set.
-
-Complexity $h$ is a measure of the number of parameters of the model. The more complex the model is, the more parameters it has, and the more data we need to estimate them. If we have a lot of parameters and a small training set, we will overfit the training data.
-
-//riguardare
-If the complexity is high the emperical risk tend to be low.
+In practice, we do not know the true distribution, so we have to estimate it
+from the available data. We can use a parametric model $p(x, t | theta)$,
+where $theta$ denotes the parameters of the model.
 
 #note()[
-  This upper bound could be not so tight, the expected upper bound can be far from the real expected risk.
-
-  In practice we can't use this upper bound because it becomes too loose, so we need to use other methods to estimate the expected risk.
+  In practice, we can only estimate the expected error. We do not observe all
+  possible data points, and therefore we do not know the complete data
+  distribution.
 ]
 
-= Supervised machine learning methods
+The main goal is to construct a model that generalizes well to unseen data
+without overfitting the training data. The model should learn the underlying
+structure of the data and make accurate predictions on new examples.
 
-== KNN
+== Estimating the expected risk
 
-We can use the $k$ nearest neighbors to classify a new point. The class of the new point is determined by the *majority* class of the $k$ nearest neighbors.
+We can express an upper bound on the expected risk as
+$
+  R(omega) <= R_"emp"(omega) + phi(h, m),
+$
+where $h$ is a measure of model complexity, $m$ is the number of training
+examples, and $phi(h, m)$ generally increases with complexity and decreases
+as the number of examples increases. Thus, for a fixed complexity, having more
+training examples makes the bound smaller.
 
-It depends on the parameter $k$:
-- if $k$ is too small we can have a *high variance* (sensitive to noisy data). For example if $k = 1$ the model will be very sensitive to the noise in the training data, and it will overfit the training data.
+For good generalization, we therefore need a sufficiently large training set.
+The complexity $h$ can be related to the number of parameters or to a more
+general capacity measure of the model. The more complex the model is, the more
+data we need to estimate it reliably. If the model has many parameters and the
+training set is small, it can overfit the training data.
+
+If the complexity is high, the empirical risk tends to be low, because a
+complex model can fit the training examples more closely. This does not
+necessarily imply a low expected risk on unseen data.
+
+#note()[
+  This upper bound may not be tight: it can be far from the actual expected
+  risk. In practice, it is often too loose to be used directly, so we use
+  empirical methods to estimate the generalization error.
+]
+
+== K-nearest neighbors
+
+We can use the $k$ nearest neighbors (KNN) to classify a new point. The class
+of the new point is determined by the *majority* class among its $k$ nearest
+neighbors.
+
+The result depends on the parameter $k$:
+- If $k$ is too small, the model can have *high variance* and be sensitive to
+  noisy data. For example, when $k = 1$, the model is very sensitive to noise
+  in the training data and can overfit.
 
   #note()[
-    $k=1$ is equal to the Voronoi diagram. Each point create a region of the space, and the new point will be classified according to the region it falls into.
+    For $k=1$, the decision regions correspond to the Voronoi diagram of the
+    training points. Each point defines a region of the space, and a new point
+    is classified according to the region in which it falls.
   ]
 
-
-- if $k$ is too big we can have a *high bias*. Neighbors can include points that are far away from the new point, and the model will not be able to capture the local structure of the data. Also the computation would be expensive.
-// aggiungere immagine da slide
+- If $k$ is too large, the model can have *high bias*. The neighborhood can
+  include points that are far from the new point, preventing the model from
+  capturing the local structure of the data. A large value of $k$ can also
+  increase the computational cost of finding the neighbors.
 
 We need to find a good trade-off between bias and variance.
 
 #warning()[
-  It can suffer from the *curse of dimensionality*, because in high dimensional spaces the distance between points becomes less meaningful, the points are concentrated in the manifold, and the distance between points becomes less meaningful. The distance between points becomes more similar, and the model will not be able to capture the local structure of the data.
+  KNN can suffer from the *curse of dimensionality*. In high-dimensional
+  spaces, distances become less informative: points tend to appear similarly
+  far apart, and the model cannot reliably capture local structure.
 ]
 
-== Perceptron linear neural model
+== Perceptron: a linear neural model
 
-//aggiungere immagine
-In a neural model we have a set of input features $x_1, x_2, ..., x_n$ and a set of weights $w_1, w_2, ..., w_n$.
-
-This input are combined linearly with the weights to produce a single output:
+In a neural model, we have a set of input features
+$x_1, x_2, ..., x_d$ and a corresponding set of weights
+$w_1, w_2, ..., w_d$. The inputs are combined linearly with the weights:
 $
-  sum_(i=0)^n w_i x_i
+  z = sum_(i=1)^d w_i x_i + b,
 $
+where $b$ is the bias.
 
-The output of the model is a linear combination of the input features and the weights, passed through an *activation function*. We use this function to obtain an input that is in the range of [1,-1] (sigmoid function) for example it can be usefull for classification problems.
+The result can be passed through an *activation function*. In the classical
+perceptron, the activation is the sign function, which produces a binary
+decision. In other neural models, a sigmoid activation can be used to obtain
+an output in the interval $[0, 1]$, which is useful for binary classification.
+The sigmoid function is differentiable, smooth, and monotonically increasing,
+so it can be used with gradient-based optimization.
 
-Sigmoid function is a good function because it is differentiable, and we can use the gradient descent to update the weights of the model. Also it is a smooth function, the value of the function is in the range of [0,1], and it is a monotone increasing function.
-
-//aggiungere geometric representation
-The slope of this line its depend on the $omega$ value, we can separate the space in two half-spaces, one for each class. The perceptron is a linear classifier, and it can only classify linearly separable data.
+The decision boundary is determined by the weights and the bias. It is a
+hyperplane that separates the space into two half-spaces, one for each class.
+The perceptron is therefore a linear classifier and can classify only linearly
+separable data.
 
 === Perceptron learning
 
-How we learn $w$? the weights. We need first of all a training set of data:
+To learn the weights, we first need a training set:
 $
-  T = [(x_k, t_k)]_(k=1)^n
+  T = [(x_k, t_k)]_(k=1)^n.
 $
-The prediction of the model is:
+For targets $t_k in {-1, 1}$, the prediction of the perceptron is
 $
-  y_k = "sign"(w^t x)
+  y_k = "sign"(w^T x_k + b),
 $
-where "sign" is the sign function, that return 1 if the value is positive, -1 if the value is negative, and 0 if the value is 0.
+where `sign` returns $1$ for a positive value, $-1$ for a negative value, and
+$0$ for zero.
 
-
-We can use for the training error a quadratic loss function:
+We can use the quadratic training error
 $
-  E(w) = 1/2 sum_(k=1)^n (underbrace(t_k, "true target") - underbrace(y_k, "prediction"))^2
+  E(w, b) = 1/2 sum_(k=1)^n (t_k - y_k)^2.
 $
-//aggiungere immagine
-The mian idea is to modify the weights in order to minimize the error function. In the image we can see a $2D$ example with two weights $w_1$ and $w_2$.
+The main idea is to modify the weights in order to minimize the error
+function. In a two-dimensional example, this error can be visualized as a
+surface over the two weights $w_1$ and $w_2$.
 
 === Gradient descent
 
-//aggiungere matematica
+We try to find the minimum of the error function. For a quadratic error, the
+error surface is parabolic. We compute its gradient and update the weights in
+the opposite direction, because the gradient points in the direction of
+steepest ascent:
+$
+  w_i <- w_i + Delta w_i \
+  Delta w_i = - eta (partial E(w)) / (partial w_i),
+$
+where $eta$ is the learning rate. If it is too small, convergence is slow; if
+it is too large, the updates can overshoot the minimum and the algorithm can
+diverge.
 
-What we try to do is tu find the minimo of the error function. In this case it is a parabolic function (quadratic error). We want to find the minimu by computing the gradient of the error function, and update the weights in the opposite direction of the gradient. The gradient is a vector that points in the direction of the steepest ascent of the function, so we want to move in the opposite direction to find the minimum:
+For the quadratic error, assuming a differentiable prediction function, we
+have
 $
-  w_i = w_i + D w_i \
-  D w_i = - h * ((partial E(w)) / (partial w_i))
+  (partial E(w)) / (partial w_i)
+  = partial / (partial w_i) 1/2 sum_(k=1)^n (t_k - y_k)^2
+  = -sum_(k=1)^n (t_k - y_k) (partial y_k) / (partial w_i).
 $
-$h "or" eta$ is the learning rate, that is a parameter that controls the step size of the update. If it is too small we will have a slow convergence, if it is too big we can overshoot the minimum and diverge. Where:
+For a linear prediction $y_k = w^T x_k$, this becomes
 $
-  (partial E(w)) / (partial w_i) = partial / (partial w_i) 1/2 sum_(t_k in T) (t_k - y_k)^2) = sum_(t_k in T)(t_k - y_k)(-x_i)
+  (partial E(w)) / (partial w_i)
+  = -sum_(k=1)^n (t_k - y_k) x_(k i).
 $
+
 #note()[
-  $y_k$ depend on $w_i$, so we need to use the chain rule to compute the derivative of the error function with respect to the weights.
+  When $y_k$ depends on the weights, the chain rule is needed to compute the
+  derivative of the error with respect to each weight. The classical
+  sign-based perceptron is not differentiable everywhere, so gradient descent
+  is usually presented with a differentiable surrogate loss or activation.
 ]
 
-At the minimum the gradient is zero (because the tangent is horizontal) or aproximately zero.
+At a differentiable minimum, the gradient is zero, or approximately zero up to
+the desired numerical tolerance.
 
-=== Gradient descente algorithm
+=== Gradient descent algorithm
 
-1. Initialize the weights $w_i$ randomly (or with small values)
+1. Initialize the weights $w_i$ randomly or with small values.
+2. Repeat until a stopping condition is met:
+   1. Initialize the gradient $Delta w_i = 0$ for all $1 <= i <= d$.
+   2. For each training example $(x_k, t_k)$:
+      1. Compute the prediction $y_k$.
+      2. For each weight $w_i$, accumulate the gradient contribution
+         $Delta w_i += -(t_k - y_k) x_(k i)$.
+   3. Update each weight with $w_i <- w_i - eta Delta w_i$.
 
-2. Repat until a stop condition is met (for example a maximum number of iterations or a small error):
-  1. Initialize the gradient $Delta w_i = 0$ for all $1<= i <=d$
-  2. For each training example $(x_k, t_k)$:
-    1. Compute the prediction $y_k = w x_k$
-    2. For each weight $w_i$:
-      1. Update the gradient $Delta w_i = - eta (t_k - y_k) x_i$
-      2. Update the weight $w_i = w_i - Delta w_i$
+Possible stopping conditions include:
+- a maximum number of iterations is reached;
+- the error function falls below a chosen threshold;
+- the norm of the gradient or of the weight update falls below a chosen
+  threshold.
 
-Some possible stop conditions are:
-- A maximum number of iterations is reached
-- The error function is below a certain threshold
-- Control if the update of the weight are below a certain threshold, if the update is too big we can stop the training because the model is not converging.
+== Multiclass perceptron
 
-== Multiple class perception
-
-We have multiple perceptrons, one for each class output classes. In this case the input are the same for all the perceptrons, but the weights are different for each perceptron. The output of each perceptron is a score for each class (a vector), and we can use a softmax function to convert the scores into probabilities.
-
-//aggiungere immagine
+For multiclass classification, we can use one perceptron for each class. The
+input is the same for all perceptrons, but each one has its own weights. The
+output of each perceptron is a score for one class. We can select the class
+with the highest score, or use a softmax function to convert the scores into
+class probabilities.
 
 #note()[
-  The output is selected according to the winner takes all strategy, that is the class with the highest score is selected as the output class. This can be a problem if the scores are very close to each other, because we can have a high uncertainty in the prediction.
+  The winner-takes-all strategy selects the class with the highest score. If
+  the scores are very close, the prediction has high uncertainty.
 ]
 
 #warning()[
-  Using perceptrons or multiple class perceptrons *we can only classify linearly separable data*. In the sense that we can separate the data with a hyperplane.
-
-  If the data is not linearly separable we need to use a more complex model, like a neural network with multiple layers (deep learning).
+  A multiclass perceptron still produces linear decision boundaries. If the
+  data is not linearly separable, a more complex model, such as a multilayer
+  neural network, is needed.
 ]
 
-== Multi-layer perceptron
+== Multilayer perceptron
 
-We add the concept of the *hidden layer* (they are hidden because they are between the input and the output layer). The hidden layer is composed of multiple perceptrons, that are connected to the input layer and the output layer. Each perceptron in the hidden layer is connected to all the perceptrons in the input layer and the output layer.
+A multilayer perceptron adds one or more *hidden layers*. They are called
+hidden because they are between the input and output layers. Each neuron in a
+hidden layer receives inputs from the preceding layer and sends its output to
+the next layer.
 
-There is a theorem that is called the *universal approximation theorem*, that states that a neural network with a single hidden layer can approximate any continuous function, given enough neurons in the hidden layer. This means that we can use a neural network to approximate any function, given enough data and computational resources.
+The *universal approximation theorem* states that a neural network with one
+hidden layer can approximate any continuous function on a suitable compact
+domain, given an appropriate activation function and sufficiently many
+neurons. This does not mean that training is easy or that little data is
+enough: the required architecture, data, and computational resources depend on
+the problem.
 
-
-#warning()[
-  We can't apply the gradient descent algorithm to the multi-layer perceptron, because by strating from the output layer and going backward to the input layer, we fouund the hidden layer, and we don't know the target output for the hidden layer. We need to use a different algorithm called *backpropagation* to compute the gradient of the error function with respect to the weights in the hidden layer.
-]
+Gradient descent can also be used for a multilayer perceptron. However, the
+gradient for the weights in the hidden layers must be computed indirectly,
+because there are no target values for hidden neurons. The required algorithm
+is called *backpropagation*.
 
 === Backpropagation
 
-The algorithm is based on the chain rule of calculus, and it allows us to compute the gradient of the error function with respect to the weights in the hidden layer.
+Backpropagation is based on the chain rule of calculus. It computes the
+gradient of the error with respect to the weights in the output layer and then
+propagates this information backward through the hidden layers.
 
 #note()[
-  To remeber, the chain rule states that if we have a function $f(g(x))$, then the derivative of $f$ with respect to $x$ is:
+  If we have a composition $f(g(x))$, the chain rule states that
   $
-    (partial f(g(x))) / (partial x) = (partial f(g(x))) / (partial g(x)) * (partial g(x)) / (partial x)
+    (partial f(g(x))) / (partial x)
+    = (partial f(g(x))) / (partial g(x))
+      * (partial g(x)) / (partial x).
   $
-  //see banjo paper in nature about deep learning inportance
+  Backpropagation applies this rule repeatedly to the sequence of layers.
 ]
 
-The idea is to compute the gradient of the error function with respect to the output of each perceptron in the hidden layer, and then use this gradient to update the weights of the perceptrons in the hidden layer.
+The computed gradients are then used by gradient descent to update the weights
+of every layer.
 
 == Performance evaluation
 
-The generalization capability of the model depend on:
-- Network architecture (number of layers, number of neurons per layer, activation function)
+The generalization capability of a model depends on:
+- the network architecture, including the number of layers, the number of
+  neurons per layer, and the activation functions;
+- the number of training neurons and the amount of training data. Too much
+  model capacity can lead to overfitting, while too little can lead to
+  underfitting;
+- regularization techniques, which constrain the magnitude of the weights.
+  For example, L1 and L2 regularization penalize large weights and can help
+  prevent overfitting;
+- the stopping conditions used during training.
 
-- Number of training neurons (more neurons can lead to overfitting, less neurons can lead to underfitting)
+In practice, we need to find a good combination of these factors. They are
+called *hyperparameters*: unlike the weights, they are not learned directly
+from the training examples. A validation set can be used to compare models
+and select suitable hyperparameters.
 
-- Regularization techniques: put on some contraints on the magnigtude og the weights. For example we can use L1 or L2 norm regularization, that penalize the weights that are too big. This can help to prevent overfitting and improve the generalization capability of the model.
+== Support vector machines
 
-- Stop conditions
-
-In the pratice we need to find the optimal combination of these factors that are called *hyperparameters*, that are parameters that are not learned by the model (those are the weights), but are set by the user. We can use a validation set to evaluate the performance of the model and select the best hyperparameters.
-
-== SVM Support vector machine
-
-SVM is a linear classifier that finds the maximum margin. This margin is the maximum distance between the hyperplane and the closest points of the two classes. The points that are closest to the hyperplane are called *support vectors*, and they are the points that define the margin.
-
-We want to choose the hyperplane that separates better the two classes.
+An SVM is a linear classifier that finds a separating hyperplane with maximum
+margin. The margin is the distance between the hyperplane and the closest
+points of the two classes. These closest points are called *support vectors*,
+because they determine the position of the maximum-margin hyperplane.
 
 === Kernel trick
 
-We can use a kernel function to map the data into a higher dimensional space, where the data is linearly separable. This is called the *kernel trick*, and it allows us to use SVMs for non-linear classification problems.
+A kernel function implicitly maps the data into a higher-dimensional feature
+space, where it may become linearly separable. This is called the *kernel
+trick* and allows SVMs to model nonlinear decision boundaries.
 
-Example of kernel functions are:
-- Polynomial kernel: $K(x, y) = (x^T y + c)^d$, where $c$ is a constant and $d$ is the degree of the polynomial. The demension of the space is $d$.
+Examples of kernel functions include:
+- polynomial kernel:
+  $K(x, y) = (x^T y + c)^d$, where $c$ is a constant and $d$ is the degree;
+- Gaussian kernel:
+  $K(x, y) = exp(-||x - y||^2 / (2 sigma^2))$, where $sigma$ controls the
+  width of the Gaussian. The associated feature space can be infinite
+  dimensional.
 
-- Gaussian kernel: $K(x, y) = exp(-||x - y||^2 / (2 sigma^2))$, where $sigma$ is a parameter that controls the width of the Gaussian. The dimension of the space is infinite.
+Using a kernel, we can obtain a linear separation in the feature space even
+when the points are not linearly separable in the original space.
 
-With the kernel we obtain an optimal separation even where this point are not linearly separable in the original space.
+= Estimating the generalization error
 
-= Estimate the generalization error
+For every model, we need to estimate the generalization error: the error that
+the model makes on unseen data. We can use two approaches:
+- *Theoretical estimation*: use an upper bound on the expected risk based on
+  model complexity and the number of training examples. This approach is often
+  not very accurate because the bound can be loose.
+- *Empirical estimation*: use held-out data to estimate the error. This
+  approach is usually more informative, but it requires enough data for both
+  training and evaluation.
 
-For every model we need to estimate the generalization error, that is the error that the model will make on unseen data. We can have two approaches:
+== Empirical estimation methods
 
-- Theorical estimation: we can use the upper bound of the expected risk, that is a function of the complexity of the model and the number of training samples. This approach is not very accurate, because the upper bound can be very loose.
-
-- Empirical estimation: we can use a validation set to estimate the generalization error. We can split the training set into a training set and a validation set, and use the validation set to evaluate the performance of the model. This approach is more accurate, but it requires more data.
-
-== Empirical estimation of the generalization error
-
-We usually have 4 classes of empirical estimation of the generalization error:
-
-- Hold-out method: we split the training set into a training set and a validation set, and use the validation set to evaluate the performance of the model. This approach is simple, but it can be sensitive to the choice of the split.
-
-- Cross-validation: we split the training set into $k$ folds, and use $k-1$ folds for training and the remaining fold for validation. We repeat this process $k$ times, and average the performance of the model on the validation sets. This approach is more robust than the hold-out method, but it can be computationally expensive.
-
-- Bootstrap: we sample with replacement from the training set to create multiple training sets, and use the remaining data for validation. We repeat this process multiple times, and average the performance of the model on the validation sets. This approach is more robust than the hold-out method, but it can be computationally expensive.
+The main empirical methods are:
+- *Hold-out*: split the data into a training set and a validation set.
+- *Repeated hold-out*: repeat the hold-out procedure with different random
+  splits and average the results.
+- *Cross-validation*: divide the data into folds and use each fold for
+  validation in turn.
+- *Bootstrap*: sample with replacement to create multiple training sets and
+  evaluate on the observations not selected in each sample.
 
 == Hold-out method
 
-The main idea is to split the dataset into two parts: a training set and a validation set. The training set is used to train the model, and the validation set is used to evaluate the performance of the model.
+The hold-out method splits the dataset into a training set and a validation
+set. The training set is used to train the model, while the validation set is
+used to evaluate its performance.
 
 #warning()[
-  The test set should be used only for the final evaluation of the model, and not for hyperparameter tuning or model selection.
+  The test set should be used only for the final evaluation of the model, not
+  for hyperparameter tuning or model selection.
 ]
 
-The main idea is to assume that the dataset is a good representation of the underlying distribution, and that the training set and the validation set are drawn from the same distribution. This assumption is not always true, especially if the dataset is small or biased.
+The method assumes that the training and validation sets are representative
+of, and drawn from, the same underlying distribution. This assumption may not
+hold when the dataset is small or biased.
 
-There are some problems with the hold-out method:
+There are two main problems:
+- With a small dataset, splitting the data reduces the number of training
+  examples. Since the generalization error usually decreases as the number of
+  training examples increases, this can worsen the estimate and the model.
+- A random split can be biased. For example, the validation set may contain
+  mostly simple examples, so the measured performance may not represent the
+  performance on more difficult examples. This is called *sampling bias*.
 
-- If we have a small dataset, if we split the data we reduce the avaialable data for training. This is not good because we know that the generalization error is a function of the number of training samples, and if we reduce the number of training samples we increase the generalization error.
+#note()[
+  Random hold-out can work well for a relatively large dataset. With a small
+  dataset, cross-validation or bootstrap methods can use the available data
+  more effectively.
+]
 
-- The sample test can be constructed by random sampling, but it can be biased. For example the validation set can be composed by only simple examples, and the model will not be able to generalize well on complex examples. This is called *sampling bias*.
+== Repeated hold-out
 
-  #note()[
-    In pratice the random sampling can be a good idea when we have a relatively large dataset, but it can be a problem when we have a small dataset. In this case we can use cross-validation or bootstrap to estimate the generalization error.
-  ]
-
-== Hold-out and repeat hold-out
-
-//riguardare
-
-
-=== Repeat hold-out
-
-This is a more robust version of the hold-out method, where we repeat the hold-out method.
+Repeated hold-out repeats the hold-out procedure several times with different
+random splits. Averaging the results generally gives a more stable estimate
+than a single split, although the same example can occur in a validation set
+multiple times.
 
 == K-fold cross-validation
 
-We have multiple experiments but the idea is to subdivide the total number of examples in $k$ folds with the *same dimension and with no overlap*.
+In $k$-fold cross-validation, the examples are divided into $k$ folds of
+approximately equal size, with no overlap. We train the model $k$ times. At
+each iteration, one fold is used as the validation set and the other $k-1$
+folds are used for training. The average validation performance is used as an
+estimate of the generalization error.
 
 #note()[
-  In this way we are sure that one example are in the test set only once. This not happen in the repeat hold-out method, where we can have the same example in the test set multiple times.
+  Every example is used as a validation example exactly once. This differs
+  from repeated hold-out, where the same example can be selected for
+  validation multiple times.
 ]
 
-//aggiungere immagine
+== Leave-one-out cross-validation
 
-The grey test set is the validation set, and the white training set is the training set. Finnlay if we have $k$ folds we can compute the average of the performance of the model on the validation sets, and use this average as an estimate of the generalization error.
+Leave-one-out cross-validation is the special case in which the number of
+folds equals the number of examples. There are $n$ folds, each containing one
+example; the remaining $n-1$ examples are used for training.
 
-== Leave-one-out
-
-In this case the number of folds is equal to the number of examples in the dataset. This means that we have $n$ folds, where $n$ is the number of examples in the dataset. Each fold contains a single example, and the remaining $n-1$ examples are used for training.
-
-In this way we can obtain the largest possible training set, and we can use the remaining example for validation.
-
-#note()[
-  The errror estimate have a large variance, because the validation set is composed by a single example. So the performance can be the worst or the best.
-]
+This method provides the largest possible training set at each iteration, but
+the estimate can have high variance because each validation set contains only
+one example.
 
 #warning()[
-  We can't never use the training set for generalization error estimation, because the model is trained on the training set, and it will have a low error on the training set. This is called *overfitting*.
+  We should not use the training error as an estimate of the generalization
+  error. The model has been fitted to the training set, so its error on that
+  set is optimistically low. This is a typical effect of overfitting.
 ]
 
-== ROC Curver
+== ROC curve
 
-The Roc curve is a graphical representation of the performance of a binary classifier as the discrimination threshold is varied. It is created by plotting the true positive rate (TPR) against the false positive rate (FPR) at various threshold settings.
+The receiver operating characteristic (ROC) curve represents the performance
+of a binary classifier as its discrimination threshold varies. It plots the
+true positive rate (TPR) against the false positive rate (FPR) for different
+thresholds.
 
-ROC curve is a ranking methods that say that positive examples are ranked higher than negative examples. This means that the model is able to distinguish between positive and negative examples, and it is not affected by the class imbalance.
+The ROC curve can also be interpreted as a ranking evaluation: it measures how
+well the classifier ranks positive examples above negative examples. The area
+under the curve (AUC) summarizes this behavior in a single value between $0$
+and $1$. An AUC of $1$ indicates perfect ranking, while an AUC of $0.5$
+corresponds to random ranking.
 
-A good result is a curve that is close to the top left corner of the plot, which indicates a high true positive rate and a low false positive rate. If we compute the area under the curve (AUC), we can have a single number that summarize the performance of the model. The AUC is a value between 0 and 1, where 1 indicates a perfect classifier and 0.5 indicates a random classifier.
-
-A bad result is a curve that is close to the diagonal line, which indicates a random classifier.
-
+A good ROC curve is close to the top-left corner, indicating a high TPR and a
+low FPR. A curve close to the diagonal corresponds to performance close to
+random classification.
