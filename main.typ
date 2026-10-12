@@ -51,4 +51,5 @@
 #include "chapters/L3.typ"
 #part("Machine Learining basics")
 #include "chapters/L4.typ"
+#include "chapters/L6.typ"
 #part("Machine Learining and AI applications to Bioinformatics")
