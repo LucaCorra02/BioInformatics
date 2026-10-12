@@ -60,9 +60,9 @@ A microarray measures the abundance of thousands of known transcripts at the sam
 The array contains many short DNA probes, each designed to hybridize with a particular target sequence. RNA is extracted from the sample, converted into labeled cDNA, and hybridized to the probes. A scanner measures
 the fluorescence emitted by each spot. After background correction and normalization, the intensity provides a relative estimate of the abundance of the corresponding transcript.
 
-#figure[
+/*#figure[
   #image("/assets/image.png", width: 60%)
-]
+]*/
 
 
 
