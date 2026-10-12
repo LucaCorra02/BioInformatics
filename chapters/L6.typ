@@ -154,3 +154,36 @@ We can to predict the effect of the genetic variants on the phenotype, and we ca
 
 //aggiungere Characteriation of regulatory variants immagine
 
+= DeepSEA
+
+Deep neural netwrok for prediction epegenetic features and pathogenic variant from DNA sequence.
+
+By considering non coding region variants, we want to predict the effect on the phenotype variation. We also want to predict if this variant is pathogenic or not.
+
+//guardare che non ho capito
+
+*Motif* is a sequence of nucleotides wich can be bind to a promoter region. We can have:
+- Gain of motif: the variant create a new motif that can bind to a promoter region, and it can increase the transcription of a gene.
+
+- Loss of motif: the variant destroy a motif that can bind to a promoter region, and it can decrease the transcription of a gene.
+
+#note()[
+  If we have a mutation in the promoter region we can alter the expression of the gene, and we can have a gain or loss of function.
+]
+
+The *logo representation* of a motif is a graphical representation of the nucleotide frequency at each position in the motif. The height of each letter represents the frequency of the nucleotide at that position, and the width of each letter represents the information content of the nucleotide at that position.
+
+//rguardare
+=== Post-transcriptional regulation
+
+Messages RNA can bind to ncRNA and can build a traslation.
+
+== Goal
+
+Given a sequence un DNA centered in a correspondance of a specific variant. We also have sourranding context.
+
+We want to:
+- Predict TF binding, histone modification in multiple cell and tissue types
+- Predict variant functionality
+
+it's a supervised learning and it's a multi label classification problem.
