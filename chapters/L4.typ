@@ -55,119 +55,87 @@ Two widely used approaches for measuring transcript abundance are:
 
 === Microarrays
 
-A microarray measures the abundance of thousands of known transcripts at the same time.
+A *microarray* measures the abundance of thousands of known transcripts at the same time.
 
-The array contains many short DNA probes, each designed to hybridize with a particular target sequence. RNA is extracted from the sample, converted into labeled cDNA, and hybridized to the probes. A scanner measures
+#align(center)[
+  #image("../img/microarrays.png", width: 60%)
+]
+
+The array contains many short DNA probes, each designed to hybridize with a particular *target sequence*. RNA is extracted from the sample, converted into labeled cDNA, and hybridized to the probes. A scanner measures
 the fluorescence emitted by each spot. After background correction and normalization, the intensity provides a relative estimate of the abundance of the corresponding transcript.
 
-/*#figure[
-  #image("/assets/image.png", width: 60%)
-]*/
+Microarray measurements are not intrinsically restricted to the interval $[0, 1]$. Their numerical scale depends on the scanner, preprocessing, and normalization method.
 
-
-
-Microarray measurements are not intrinsically restricted to the interval
-$[0, 1]$. Their numerical scale depends on the scanner, preprocessing, and
-normalization method. The values are usually interpreted comparatively, for
-example to determine whether a gene is expressed more highly in one condition
-than in another.
+The values are usually interpreted comparatively, for
+example to determine whether a gene is expressed more highly in one condition than in another.
 
 === RNA-seq
 
-In RNA-seq, RNA is converted into a sequencing library and read by a
-high-throughput sequencing instrument. The reads are aligned to a reference
-genome or transcriptome, or assembled when no suitable reference is available.
-The number of reads assigned to a gene or transcript provides an estimate of
-its abundance. Appropriate normalization is necessary because samples can
+In RNA-seq, RNA is converted into a sequencing library and read by a high-throughput sequencing instrument. The reads are aligned to a reference genome or transcriptome, or assembled when no suitable reference is available.
+
+The number of reads assigned to a gene or transcript provides an estimate of its abundance. Appropriate normalization is necessary because samples can
 contain different total numbers of reads and genes can have different lengths.
 
-Expression data are often visualized with a *heatmap*: rows represent genes,
-columns represent samples, and colors represent normalized expression values.
-The color scale is relative to the chosen transformation and does not
-necessarily mean that red is always high expression or that blue is always low
-expression.
+Expression data are often visualized with a *heatmap*: rows represent genes, columns represent samples, and colors represent normalized expression values.
+
+#note()[
+  The color scale is relative to the chosen transformation and does not necessarily mean that red is always high expression or that blue is always low expression.
+]
 
 == Protein expression
 
 #note()[
-  Protein abundance is influenced by gene expression, but it is not determined
-  by it alone. Translation efficiency, protein degradation, post-translational
-  modifications, and cellular localization can all change the amount and
-  activity of a protein.
+  Protein abundance is influenced by gene expression, but it is not determined by it alone. Translation efficiency, protein degradation, post-translational
+  modifications, and cellular localization can all change the amount and activity of a protein.
 ]
 
 Protein-abundance data can also be represented as a matrix:
 - rows represent proteins;
 - columns represent samples, conditions, or time points;
-- $L_(i,j)$ represents the measured abundance of protein $i$ in sample $j$.
+- *$L_(i,j)$* represents the measured abundance of protein $i$ in sample $j$.
 
-== Three-dimensional structures
+=== Three-dimensional structures
 
-The three-dimensional structure of a protein is important for understanding its
-function, binding sites, and interactions with other molecules. A structure can
-be represented by the three-dimensional coordinates of its atoms, together with
-information about atom types, bonds, and sometimes experimental uncertainty.
-Structures can be determined experimentally, for example by X-ray
-crystallography, nuclear magnetic resonance, or cryo-electron microscopy.
+The three-dimensional structure of a protein is important for understanding its function, binding sites, and interactions with other molecules. A structure can
+be represented by the *three-dimensional coordinates* of its atoms, together with information about atom types, bonds, and sometimes experimental uncertainty. Structures can be determined experimentally, for example by X-ray
+crystallography, nuclear magnetic resonance.
 
 #warning()[
-  The experimental structure is not necessarily identical to the structure
-  adopted in every cellular condition. Crystal packing, temperature, ligand
-  binding, and other experimental factors can influence the observed
-  conformation.
+  The experimental *structure is not* necessarily *identical* to the structure adopted *in every cellular condition*. Crystal packing, temperature, ligand binding, and other experimental factors can influence the observed conformation.
 ]
 
-Machine-learning methods can also predict structures from amino-acid sequences.
-For example, AlphaFold predicts protein structures using information learned
-from sequence and structural data. Predictions are useful hypotheses, but their
-confidence can vary across different regions of a protein.
+Machine-learning methods can also predict structures from amino-acid sequences.\
+For example, `AlphaFold` predicts protein structures using information learned from sequence and structural data. Predictions are useful hypotheses, but their confidence can vary across different regions of a protein.
 
-== Interactions
+=== Interactions
 
-Studying interactions is important because the function of a cell depends on
-coordinated relationships among proteins, nucleic acids, metabolites, and other
-components. Interaction data can be represented as networks, in which nodes
-represent biological entities and edges represent physical or functional
-relationships.
+Studying interactions is important because the function of a cell depends on *coordinated relationships* among proteins, nucleic acids, metabolites, and other
+components. Interaction data can be represented as *networks*, in which:
+- _nodes_ represent biological entities
+- _edges_ represent physical or functional relationships.
 
 #example()[
-  A transcription factor binds specific DNA sequences near a gene and
-  regulates transcription. Its activity can also depend on interactions with
-  co-activators, co-repressors, chromatin-remodeling complexes, and signaling
-  proteins. These interactions affect the specificity and strength of
-  regulation.
+  A transcription factor binds specific DNA sequences near a gene and regulates transcription. Its activity can also depend on interactions with co-activators, co-repressors, chromatin-remodeling complexes, and signaling roteins. These interactions affect the specificity and strength of regulation.
 ]
 
 == Examples of use
 
-These data can support *personalized medicine*. For example, genomic variants,
-expression profiles, and clinical information can be combined to identify
-biomarkers, predict disease risk, select a treatment, or anticipate an
-individual's response to a drug.
+These data can support *personalized medicine*. For example, genomic variants, expression profiles, and clinical information can be combined to identify
+biomarkers, predict disease risk, select a treatment, or anticipate an individual's response to a drug.
 
-Gene-expression data can be used to identify genes that are differentially
-expressed between healthy and diseased tissues. These genes may suggest
-biological mechanisms, therapeutic targets, or diagnostic and prognostic
-biomarkers. Genes can also be clustered according to their expression patterns
-across samples, helping identify co-regulated genes and biological pathways.
+Gene-expression data can be used to identify genes that are differentially expressed between healthy and diseased tissues. These genes may suggest biological mechanisms, therapeutic targets, or diagnostic and prognostic biomarkers. Genes can also be clustered according to their expression patterns across samples, helping identify co-regulated genes and biological pathways.
 
-In *systems biology*, we study a biological system as a whole rather than
-considering only one gene or protein. Integrating sequences, expression,
-protein measurements, structures, interaction networks, and clinical data can
+In *systems biology*, we study a biological system as a whole rather than considering only one gene or protein. Integrating sequences, expression, protein measurements, structures, interaction networks, and clinical data can
 provide a more complete description of the system.
 
 = Machine learning in bioinformatics
 
-Machine-learning algorithms learn a model from data. In supervised learning,
-the input data are paired with target outputs; the model learns a relationship
-that can be used to make predictions for new inputs. In other settings, the
-algorithm identifies structure in unlabeled data or learns from feedback.
+Machine-learning algorithms learn a model from data. The main difference from traditional programming is that machine learning does *not return a fixed output* for a given input. Instead, it learns a function that maps inputs to outputs based on patterns in the training data. They actually return a *probabilistic model* that can make predictions and quantify uncertainty.
 
 == Challenges
 
 Bioinformatics datasets present several challenges:
-- *High dimensionality*: there may be many measured features and relatively few
-  samples, which increases the risk of overfitting.
+- *High dimensionality*: there may be many measured features and relatively few samples, which increases the risk of overfitting.
 - *Limited labels*: biological labels can be expensive, noisy, or unavailable.
   Unsupervised and semi-supervised methods can help exploit unlabeled data.
 - *Noise and missing values*: measurements can contain experimental noise,
@@ -179,11 +147,6 @@ Bioinformatics datasets present several challenges:
 - *Data leakage and confounding*: information from the test set or from
   correlated samples must not accidentally enter training, and technical
   effects must be distinguished from biological effects.
-
-These challenges do not imply that standard algorithms are always unusable, nor
-are they all NP-hard problems. Instead, the choice of representation, model,
-preprocessing, and validation strategy must reflect the biological data and the
-question being studied.
 
 == Representation and evaluation
 
@@ -228,52 +191,29 @@ The main types of machine learning are:
 
 === Supervised learning
 
-Let $f: X -> Y$ be the unknown target function that maps an input from the
-space $X$ to an output in the space $Y$. A training set consists of pairs
-$(x_i, y_i)$, where $x_i in X$ and $y_i in Y$. A learning algorithm uses these
-examples to construct a hypothesis $g: X -> Y$ that approximates $f$ and
-generalizes to unseen inputs.
+Let $f: X -> Y$ be the unknown target function that maps an input from the space $X$ to an output in the space $Y$. A training set consists of pairs $(x_i, y_i)$, where: $x_i in X$ and $y_i in Y$.
 
-If $Y$ is a discrete set of labels, the task is called *classification*. If
-$Y$ is continuous, the task is called *regression*. In practice, the training
-examples may contain measurement noise, so requiring $g(x_i) = y_i$ for every
-training example is not always appropriate.
+A learning algorithm uses these examples to construct a *hypothesis* $g: X -> Y$ that *approximates $f$* and
+generalizes to unseen inputs:
+- If $Y$ is a discrete set of labels, the task is called *classification*
+- If $Y$ is continuous, the task is called *regression*
+
+#note()[
+  In practice, the training examples may contain measurement noise, so requiring $g(x_i) = y_i$ for every
+  training example is not always appropriate.
+]
+
+Usually this type of learning is suitable for *classification* and *regression problems*, where the goal is to predict a label or a continuous value based on input features.
 
 === Unsupervised learning
 
-In unsupervised learning, the input data have no corresponding target labels.
-The goal is to discover useful structure, such as groups of similar samples,
+In Unsupervised learning, the input data have no corresponding target labels. The goal is to *discover useful structure*, such as groups of similar samples,
 low-dimensional representations, or unusual observations.
 
 #informally()[
-  Imagine points in a space and ask which points are similar to one another.
-  Algorithms such as k-means, hierarchical clustering, and DBSCAN use
-  different definitions of similarity to identify groups.
+  Imagine points in a space, we ask which points are similar to one another. Algorithms such as k-means, hierarchical clustering, and DBSCAN use different *definitions of similarity* to identify groups.
 ]
 
 #note()[
-  Similarity may be measured with Euclidean distance, cosine similarity, or
-  Jaccard similarity, among other choices. The metric and its scaling can
-  substantially affect the clusters and their biological interpretation.
-]
-
-== Loss function
-
-#example()[
-  Suppose that $x in RR^d$ is a vector containing the expression levels of
-  $d$ genes in one sample, and that $t in {0, 1}$ indicates whether the sample
-  comes from a healthy or diseased patient. We want to learn a classifier
-  $g: RR^d -> {0, 1}$ from a dataset
-  $D = {(x_i, t_i)}_(i=1)^n$.
-
-  A *loss function* $L(g(x_i), t_i)$ measures the error of a prediction. The
-  empirical risk is the average loss on the training set:
-  $
-    R_"emp"(g) = 1/n sum_(i=1)^n L(g(x_i), t_i).
-  $
-  The learning algorithm chooses model parameters that minimize this quantity,
-  possibly together with a regularization term. The loss does not necessarily
-  range from $0$ to $1$: squared error, absolute error, cross-entropy, and
-  zero-one loss have different scales. Lower loss means better agreement with
-  the targets according to the chosen definition.
+  Similarity may be measured with Euclidean distance, cosine similarity, or Jaccard similarity, among other choices. The metric and its scaling can substantially affect the clusters and their biological interpretation.
 ]
