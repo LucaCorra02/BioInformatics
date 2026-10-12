@@ -78,10 +78,10 @@ Since we are not able to compute the expected risk directly, we can use an upper
 $
   R(omega) <= R_"emp" (omega) + phi(h, m),
 $
-where: 
+where:
 - *$h$*: is a measure of *model complexity*
 - *$m$*: is the *number of training
-examples*
+  examples*
 - *$phi(h, m)$*: it's a function that depends on the complexity ($h$) and the number of training examples ($m$). It is called the *generalization bound*.
 
   #note()[
@@ -94,61 +94,147 @@ examples*
   This upper bound *may not be tight*: it can be far from the actual expected risk. In practice, it is often too loose to be used directly, so we use empirical methods to estimate the generalization error.
 ]
 
+= ML Model
+
+
 == K-nearest neighbors
 
-We can use the $k$ nearest neighbors (KNN) to classify a new point. The class
-of the new point is determined by the *majority* class among its $k$ nearest
-neighbors.
+We can use the $k$ nearest neighbors (KNN) to classify a new point. The class of the new point is determined by the *majority class* among its $k$ nearest neighbors. The result depends on the parameter $k$:
 
-The result depends on the parameter $k$:
-- If $k$ is too small, the model can have *high variance* and be sensitive to
-  noisy data. For example, when $k = 1$, the model is very sensitive to noise
-  in the training data and can overfit.
+- If $k$ is *too small*, the model can have *high variance* and be sensitive to noisy data. For example, when $k = 1$, the model is very sensitive to noise in the training data and can overfit.
 
   #note()[
-    For $k=1$, the decision regions correspond to the Voronoi diagram of the
+    For $k=1$, the decision regions correspond to the *Voronoi diagram* of the
     training points. Each point defines a region of the space, and a new point
     is classified according to the region in which it falls.
   ]
 
-- If $k$ is too large, the model can have *high bias*. The neighborhood can
-  include points that are far from the new point, preventing the model from
-  capturing the local structure of the data. A large value of $k$ can also
-  increase the computational cost of finding the neighbors.
+- If $k$ is *too large*, the model can have *high bias*. The neighborhood can include points that are far from the new point, preventing the model from capturing the local structure of the data. A large value of $k$ can also increase the computational cost of finding the neighbors.
 
-We need to find a good trade-off between bias and variance.
+We need to find a good *trade-off* between bias and variance.
+
+#figure(
+  caption: [Classification of a new point with 3-nearest neighbors.],
+)[
+  #align(center)[
+    #cetz.canvas(length: 1.15cm, padding: 0.2cm, {
+      import cetz.draw: *
+
+      // Coordinate system: x increases to the right and y upwards.
+      rect((0, 0), (6, 6), stroke: (paint: black, thickness: 0.8pt))
+
+      // Negative examples.
+      for point in (
+        (0.8, 5.7),
+        (3.5, 5.5),
+        (5.3, 5.3),
+        (1.0, 4.6),
+        (2.8, 4.7),
+        (4.2, 4.6),
+        (0.9, 1.5),
+        (2.8, 3.2),
+      ) {
+        line((point.at(0) - 0.22, point.at(1)), (point.at(0) + 0.22, point.at(1)), stroke: (
+          paint: navy,
+          thickness: 2.5pt,
+          cap: "round",
+        ))
+      }
+
+      // Positive examples.
+      for point in (
+        (3.9, 4.0),
+        (5.5, 4.6),
+        (5.5, 1.7),
+        (3.8, 1.3),
+        (2.3, 0.5),
+        (4.7, 0.5),
+      ) {
+        line((point.at(0) - 0.2, point.at(1) - 0.2), (point.at(0) + 0.2, point.at(1) + 0.2), stroke: (
+          paint: maroon,
+          thickness: 2.5pt,
+          cap: "round",
+        ))
+        line((point.at(0) - 0.2, point.at(1) + 0.2), (point.at(0) + 0.2, point.at(1) - 0.2), stroke: (
+          paint: maroon,
+          thickness: 2.5pt,
+          cap: "round",
+        ))
+      }
+
+      // New point and the circle containing its three nearest neighbors.
+      let new-point = (2.8, 2.8)
+      circle(new-point, radius: 2.1, stroke: (paint: red, thickness: 1.4pt, dash: "dashed"))
+      line((new-point.at(0) - 0.12, new-point.at(1)), (new-point.at(0) + 0.12, new-point.at(1)), stroke: (
+        paint: black,
+        thickness: 1pt,
+      ))
+      line((new-point.at(0), new-point.at(1) - 0.12), (new-point.at(0), new-point.at(1) + 0.12), stroke: (
+        paint: black,
+        thickness: 1pt,
+      ))
+      content((new-point.at(0) + 0.12, new-point.at(1) - 0.35), [x])
+    })
+  ]
+]
 
 #warning()[
   KNN can suffer from the *curse of dimensionality*. In high-dimensional
-  spaces, distances become less informative: points tend to appear similarly
-  far apart, and the model cannot reliably capture local structure.
+  spaces, *distances become less informative*: points tend to appear similarly far apart, and the model cannot reliably capture local structure.
 ]
 
 == Perceptron: a linear neural model
 
-In a neural model, we have a set of input features
-$x_1, x_2, ..., x_d$ and a corresponding set of weights
-$w_1, w_2, ..., w_d$. The inputs are combined linearly with the weights:
+In a neural model, we have a set of input features $x_1, x_2, ..., x_d$ and a corresponding set of weights $w_1, w_2, ..., w_d$. The inputs are *combined linearly* with the weights:
 $
-  z = sum_(i=1)^d w_i x_i + b,
+  z = sum_(i=1)^d w_i x_i + underbrace(mr(b), "bias vector")
 $
-where $b$ is the bias.
-
 The result can be passed through an *activation function*. In the classical
-perceptron, the activation is the sign function, which produces a binary
-decision. In other neural models, a sigmoid activation can be used to obtain
-an output in the interval $[0, 1]$, which is useful for binary classification.
-The sigmoid function is differentiable, smooth, and monotonically increasing,
-so it can be used with gradient-based optimization.
+perceptron, the activation is the *sign function*, which produces a *binary
+decision*.
 
-The decision boundary is determined by the weights and the bias. It is a
-hyperplane that separates the space into two half-spaces, one for each class.
-The perceptron is therefore a linear classifier and can classify only linearly
-separable data.
+The *decision boundary* is determined by the weights and the bias. It is a *hyperplane* that separates the space into two half-spaces, one for each class.
+
+#figure(
+  caption: [Geometric representation of the function computed by a perceptron.],
+)[
+  #align(center)[
+    #cetz.canvas(length: 0.9cm, padding: 0.25cm, {
+      import cetz.draw: *
+
+      // The line is the decision boundary w_0 + sum_i w_i x_i = 0.
+      line((4.6, 5.6), (2.0, 0.5), stroke: (paint: black, thickness: 1.2pt))
+
+      // Positive and negative examples.
+      circle((1.0, 3.0), radius: 0.09, fill: black, stroke: none)
+      circle((7.8, 3.1), radius: 0.09, fill: black, stroke: none)
+
+      content((3.3, 6.0), [
+        $w_0 + sum_(i=1)^n w_i x_i = 0$
+      ])
+      content((0.25, 3.8), [
+        $[x_1^+, ..., x_n^+] in E_n$ \
+        $w_0 + sum_(i=1)^n w_i x_i^+ > 0$ \
+        $arrow.r y = 1$
+      ])
+      content((5.4, 2.35), [
+        $[x_1^-, ..., x_n^-] in E_n$ \
+        $w_0 + sum_(i=1)^n w_i x_i^- < 0$ \
+        $arrow.r y = 0$
+      ])
+    })
+  ]
+]
+
+In other neural models, a *sigmoid* activation can be used to obtain an output in the interval $[0, 1]$, which is useful for binary classification. The sigmoid function is differentiable, smooth, and monotonically increasing, so it can be used with gradient-based optimization.
+
+#warning()[
+  The perceptron is therefore a linear classifier and can *classify only linearly separable data*.
+]
 
 === Perceptron learning
 
-To learn the weights, we first need a training set:
+To *learn the weights*, we first need a training set:
 $
   T = [(x_k, t_k)]_(k=1)^n.
 $
@@ -157,48 +243,44 @@ $
   y_k = "sign"(w^T x_k + b),
 $
 where `sign` returns $1$ for a positive value, $-1$ for a negative value, and
-$0$ for zero.
-
-We can use the quadratic training error
+$0$ for zero. We can use the quadratic training error
 $
   E(w, b) = 1/2 sum_(k=1)^n (t_k - y_k)^2.
 $
-The main idea is to modify the weights in order to minimize the error
-function. In a two-dimensional example, this error can be visualized as a
-surface over the two weights $w_1$ and $w_2$.
+The main idea is to *modify the weights* in order to minimize the error function. In a two-dimensional example, this error can be visualized as a surface over the two weights $w_1$ and $w_2$.
 
 === Gradient descent
 
-We try to find the minimum of the error function. For a quadratic error, the
-error surface is parabolic. We compute its gradient and update the weights in
-the opposite direction, because the gradient points in the direction of
-steepest ascent:
+Given a differentiable error function $E(omega)$, we can use *gradient descent* to find the weights that minimize the error. The gradient of the error function is a vector that points in the direction of *steepest ascent*. By moving in the opposite direction of the gradient, we can iteratively update the weights to reduce the error:
 $
   w_i <- w_i + Delta w_i \
   Delta w_i = - eta (partial E(w)) / (partial w_i),
 $
-where $eta$ is the learning rate. If it is too small, convergence is slow; if
-it is too large, the updates can overshoot the minimum and the algorithm can
-diverge.
+where $eta$ is the *learning rate*. If it is too small, convergence is slow; if
+it is too large, the updates can overshoot the minimum and the algorithm can diverge.
 
-For the quadratic error, assuming a differentiable prediction function, we
-have
-$
-  (partial E(w)) / (partial w_i)
-  = partial / (partial w_i) 1/2 sum_(k=1)^n (t_k - y_k)^2
-  = -sum_(k=1)^n (t_k - y_k) (partial y_k) / (partial w_i).
-$
-For a linear prediction $y_k = w^T x_k$, this becomes
-$
-  (partial E(w)) / (partial w_i)
-  = -sum_(k=1)^n (t_k - y_k) x_(k i).
-$
+
+#example()[
+  If we consider a quadratic error function $E(w_1, w_2)$, the gradient descent algorithm iteratively updates the weights $w_1$ and $w_2$ in the direction of the negative gradient. The learning rate $eta$ controls the size of the steps taken in each iteration. The process continues until convergence, in this case the lower point on the paraboloid.
+
+  $
+    (partial E(w)) / (partial w_i)
+    = partial / (partial w_i) 1/2 sum_(t_k n T) (t_k - y_k)^2
+    = -sum_(k=1)^n (t_k - y_k) (partial y_k) / (partial w_i).
+  $
+  For a linear prediction $y_k = w^T x_k$, this becomes
+  $
+    (partial E(w)) / (partial w_i)
+    = -sum_(k=1)^n (t_k - y_k) x_(k i).
+  $
+
+]
+
+
 
 #note()[
-  When $y_k$ depends on the weights, the chain rule is needed to compute the
-  derivative of the error with respect to each weight. The classical
-  sign-based perceptron is not differentiable everywhere, so gradient descent
-  is usually presented with a differentiable surrogate loss or activation.
+  When $y_k$ depends on the weights, the *chain rule* is needed to compute the
+  derivative of the error with respect to each weight.
 ]
 
 At a differentiable minimum, the gradient is zero, or approximately zero up to
@@ -206,36 +288,41 @@ the desired numerical tolerance.
 
 === Gradient descent algorithm
 
+The algorithm for gradient descent can be summarized as follows:
+
 1. Initialize the weights $w_i$ randomly or with small values.
-2. Repeat until a stopping condition is met:
+
+2. Repeat until a *stopping condition* is met:
   1. Initialize the gradient $Delta w_i = 0$ for all $1 <= i <= d$.
   2. For each training example $(x_k, t_k)$:
-    1. Compute the prediction $y_k$.
-    2. For each weight $w_i$, accumulate the gradient contribution
-      $Delta w_i += -(t_k - y_k) x_(k i)$.
-  3. Update each weight with $w_i <- w_i - eta Delta w_i$.
+    1. Compute the prediction $y_k = w x_k$.
+    2. For each weight $w_i$, accumulate the gradient contribution: $ Delta w_i <- - eta (t_k - y_k) x_(k i) $
 
-Possible stopping conditions include:
-- a maximum number of iterations is reached;
-- the error function falls below a chosen threshold;
-- the norm of the gradient or of the weight update falls below a chosen
-  threshold.
+    3. Update each weight with $w_i <- w_i - Delta w_i$.
+
+#note()[
+  Possible *stopping conditions* include:
+  - a maximum number of iterations is reached;
+  - the error function falls below a chosen threshold;
+  - the norm of the gradient or of the weight update falls below a chosen
+    threshold.
+]
+
 
 == Multiclass perceptron
 
-For multiclass classification, we can use one perceptron for each class. The
-input is the same for all perceptrons, but each one has its own weights. The
-output of each perceptron is a score for one class. We can select the class
-with the highest score, or use a softmax function to convert the scores into
+For *multiclass classification*, we can use *one perceptron for each class*.
+
+The input is the same for all perceptrons, but each one has its own weights. The
+output of each perceptron is a score for one class. We can select the class with the highest score, or use a softmax function to convert the scores into
 class probabilities.
 
 #note()[
-  The winner-takes-all strategy selects the class with the highest score. If
-  the scores are very close, the prediction has high uncertainty.
+  The *winner-takes-all* strategy selects the class with the highest score. If the scores are very close, the prediction has high uncertainty.
 ]
 
 #warning()[
-  A multiclass perceptron still produces linear decision boundaries. If the
+  A multiclass perceptron still produces *linear decision boundaries*. If the
   data is not linearly separable, a more complex model, such as a multilayer
   neural network, is needed.
 ]
@@ -247,12 +334,13 @@ hidden because they are between the input and output layers. Each neuron in a
 hidden layer receives inputs from the preceding layer and sends its output to
 the next layer.
 
-The *universal approximation theorem* states that a neural network with one
-hidden layer can approximate any continuous function on a suitable compact
-domain, given an appropriate activation function and sufficiently many
-neurons. This does not mean that training is easy or that little data is
-enough: the required architecture, data, and computational resources depend on
-the problem.
+#theorem(title: "Universal approximation theorem")[
+  The *universal approximation theorem* states that a neural network with one
+  hidden layer can approximate *any continuous function* on a suitable compact
+  domain, given an appropriate activation function and sufficiently many neurons.
+
+  This does not mean that training is easy or that little data is enough: the required architecture, data, and computational resources depend on the problem.
+]
 
 Gradient descent can also be used for a multilayer perceptron. However, the
 gradient for the weights in the hidden layers must be computed indirectly,
