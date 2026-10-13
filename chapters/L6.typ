@@ -2,14 +2,75 @@
 
 = Deep Learning
 
+Deep learning model are neural networks with multiple layers. They can learn complex representations of data and have been successful in many applications.
+
+The basic building block of a neural network is the *neuron*, which computes a *weighted sum* of its inputs and applies a *nonlinear activation function*:
+$
+  "Weigheted sum" &= z = sum_(i=1)^(n) w_i x_i + b \
+  "Activation" &= y = f(z)
+$
+The weights are learned during training using backpropagation and an optimization algorithm, such as stochastic gradient descent (SGD). During the backpropagation we compute the gradient of the loss function with respect to the weights and update them accordingly to a learning rate: 
+$
+  (delta E) / (delta w) = mr((delta E) / (delta y)) * mb((delta y) / (delta z)) * mg((delta z) / (delta w_i))
+$
+where:
+- 
+
+
+
+
+
+
 Deep learning models can suffer from the *vanishing-gradient* and
-*exploding-gradient* problems. If the gradient becomes too small, the weights
-are barely updated and the model may fail to learn; if it becomes too large,
-the updates can become unstable. The *ReLU* activation function,
-$f(x) = max(0, x)$, helps reduce saturation for positive inputs: its derivative
-is $1$ for positive values and $0$ for negative values. ReLU does not completely
-solve either problem, however, and can cause inactive ("dead") neurons when
-their inputs remain negative.
+*exploding-gradient* problems:
+- If the gradient becomes *too small*, the weights are barely updated and the model may fail to learn
+
+- if it becomes *too large*, the updates can become unstable.
+
+
+
+
+#note()[
+  The *ReLU* activation function $f(x) = max(0, x)$
+
+  #figure()[
+    #align(center)[
+      #cetz.canvas(length: 0.75cm, padding: 0.25cm, {
+        import cetz.draw: *
+
+        let origin = (4.0, 1.0)
+        let x-end = (8.0, 1.0)
+        let y-end = (4.0, 5.0)
+
+        // Coordinate axes.
+        line(origin, x-end, stroke: (paint: black, thickness: 0.8pt))
+        line(origin, y-end, stroke: (paint: black, thickness: 0.8pt))
+        line(x-end, (7.7, 1.12), stroke: (paint: black, thickness: 0.8pt))
+        line(y-end, (3.88, 4.7), stroke: (paint: black, thickness: 0.8pt))
+
+        // The two branches of ReLU: zero for x < 0 and y = x for x >= 0.
+        line((1.0, 1.0), origin, stroke: (paint: teal, thickness: 2pt))
+        line(origin, (7.0, 4.0), stroke: (paint: teal, thickness: 2pt))
+        circle(origin, radius: 0.09, fill: teal, stroke: (paint: teal, thickness: 0.8pt))
+
+        content((7.35, 0.55), text(size: 9pt)[$x$])
+        content((3.45, 4.65), text(size: 9pt)[$f(x)$])
+        content((3.7, 0.55), text(size: 8pt)[$0$])
+
+        content((2.8, 3.8), text(size: 8pt)[$f(x) = x$])
+        content((1.55, 1.25), text(size: 8pt)[$f(x) = 0$])
+      })
+    ]
+  ]
+  helps *reduce saturation* for positive inputs. Its derivative is $1$ for positive values and $0$ for negative values.
+
+
+
+
+]
+
+
+
 
 == CNN (Convolutional Neural Network)
 
