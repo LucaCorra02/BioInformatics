@@ -2,38 +2,52 @@
 
 = Deep Learning
 
-//recuperare intro da slide
-
-The main problem that deep learining address is the *vanish gradient* or the *exploding gradient*. For example, if the gradient is too small, the weights will not be updated and the model will not learn. In this case we can use the *ReLU* activation function, it reuturns the maximum between 0 and the input value. This way, the gradient will be 1 for positive values and 0 for negative values.
+Deep learning models can suffer from the *vanishing-gradient* and
+*exploding-gradient* problems. If the gradient becomes too small, the weights
+are barely updated and the model may fail to learn; if it becomes too large,
+the updates can become unstable. The *ReLU* activation function,
+$f(x) = max(0, x)$, helps reduce saturation for positive inputs: its derivative
+is $1$ for positive values and $0$ for negative values. ReLU does not completely
+solve either problem, however, and can cause inactive ("dead") neurons when
+their inputs remain negative.
 
 == CNN (Convolutional Neural Network)
 
-We have local conections between neurons in a hidden layer (expect to FNN). By using padding pixel ce can accept variations in the input image.
+In a CNN, neurons in a layer are locally connected to small regions of the
+previous layer, unlike in a fully connected neural network (FNN). Padding can
+preserve the spatial dimensions of the feature maps and allow the network to
+process pixels near the image borders.
 
-Convulution is basically a vector $s$ that is obtained by multiplyng a kernel $w$ and $x$ wich is the input image. Since is a continuos function we can represent it as a sum:
+In one dimension, the convolution of an input $x$ with a kernel $w$ is a
+function $s$ obtained by sliding the kernel over the input and computing a
+weighted sum:
 $
   s(t) = (x * w)(t) = sum_{a=-infinity}^{infinity} x(a) w(t-a)
 $
 
-Since the immage are usually a 2D matrix, we can represent the convolution as a sum on the two dimensions (row and column):
+Since images are usually represented as two-dimensional matrices, the
+convolution can be written as a sum over rows and columns:
 $
   S(i,j) = (I*K)(i,j) = sum_m sum_n I(m,n) K(i-m, j-n)
 $
 #note()[
-  The convulution is commutative, so we can flip the kernel, we can have the convultion in the opposite way $K(I * K) = J(K * I)$
+  Convolution is commutative: $I * K = K * I$. In the discrete formula, the
+  kernel is effectively flipped because it is evaluated at $(i-m, j-n)$.
 ]
 
 === Cross-correlation
 
-The software library usually use *cross-correlation* instead of convolution, since the kernel is not flipped. The two approaches, but is more pratical use cross-correlation since we move on the right instead of the left:
+Deep-learning libraries usually implement *cross-correlation* rather than
+mathematical convolution, because the kernel is not flipped. In two dimensions,
+it can be written as:
 $
-  S(i,j) = (I*K)(i,j) = sum_m sum_n I(i+m, j+n) K(m,n)
+  S(i,j) = sum_m sum_n I(i+m, j+n) K(m,n)
 $
 
 #example()[
-  Given the formula:
+  Given the cross-correlation formula:
   $
-    S(K * I)(i) = sum_m I(i+m) K(m)
+    S(i) = sum_m I(i+m) K(m)
   $
 
 
@@ -44,7 +58,7 @@ $
   $
     S[0] = I[0]*K[0] + I[1]*K[1] + I[2]*K[2] = 1*1 + 3*2 + 1*1 = 8
   $
-  We cant to compute S[1], we need to shift K to the right by 1, so we have:
+  To compute $S[1]$, we shift the kernel to the right by $1$:
   $
     S[1] = I[1]*K[0] + I[2]*K[1] + I[3]*K[2] = 3*1 + 1*2 + 2*1 = 7
   $
@@ -54,136 +68,206 @@ $
   $
 ]
 
-// add convulution example from slides
-
 === Sparse connectivity
 
-In the classical FNN each neuron is connected to all the neurons in the previous layer, we have a lot of connections and a lot of weights.
+In a classical FNN, each neuron is connected to every neuron in the previous
+layer, resulting in many connections and parameters.
 
-In convolution we have a *sparce connectivity*, since each neuron is connected only to a small region of the input image. This region depends on the *size of the kernel*. This way we have less weights and less connections, and we can learn more complex features.
-
-//aggiunger immagine
+In a convolutional layer, we have *sparse connectivity*: each neuron is
+connected only to a small local region of the input. This region depends on the
+kernel size. Consequently, the layer has fewer connections and parameters,
+while successive layers can combine local features into increasingly global
+ones.
 
 #note()[
-  The sparse connectivity does not exclude the gloabl connectivity. Since a node in the high layer is it like is connected to all the nodes in the input layer
+  Sparse connectivity does not prevent global information from being captured.
+  Through successive convolutional layers, the receptive field of a neuron
+  can eventually cover the entire input.
 ]
 
 === Parameter sharing
 
-If we consider a FNN the parameter are specifically for each connection, so we have a lot of parameters.
+In an FNN, the parameters are specific to individual connections, so the
+number of parameters can be large.
 
-In convolution we have *parameter sharing*, since the same kernel is used for all the neurons in the layer. In the convulution we move the kernell across the input, so we have the same weights for all the neurons in the layer. If the kernel has size 3x3, we have 9 weights for all the neurons in the layer.
+In a convolutional layer, we have *parameter sharing*: the same kernel is
+applied at every spatial position. If the kernel has size $3 times 3$, it has
+9 weights per input channel (plus, usually, one bias per output channel), not
+9 separate weights for every neuron.
 
-This way we have less parameters and less connections, and we can learn more complex features.
+This reduces the number of parameters and makes the detector translation
+equivariant: shifting the input shifts the feature map.
 
 === Pooling layer
 
-They introduce an invariant transformation and abstraction. The polling layeri is used to reduce the dimensionality and capture the most important features. The pooling layer is usually used after a convolution layer.
+Pooling layers introduce a degree of local translation invariance and
+abstraction. They reduce the spatial dimensions of a feature map and retain
+an aggregated summary, such as a maximum or an average. Pooling is often
+applied after a convolution and its activation function.
 
-After the pooling layer we applied a activation function, usually the ReLU. The pooling layer is used to reduce the dimensionality and capture the most important features.
+An activation function, usually ReLU, is typically applied after the
+convolution and before pooling, although the exact ordering can vary by
+architecture.
 
 === Architecture
 
-In a CNN we have:
-- Input layer: the input image. or the vector
-- Convolution layer: the convolution operation is applied to the input image, and the output is a feature map.
-- Detection layer: the feature map is passed through an activation function, usually the ReLU.
-- Pooling layer: the pooling operation is applied to the feature map, and the output is a pooled feature map.
+In a CNN, we typically have:
+- *Input layer*: the input image or another spatially structured tensor.
+- *Convolutional layer*: kernels are applied to the input, producing feature
+  maps.
+- *Activation layer*: a nonlinear activation function, usually ReLU, is
+  applied to the feature maps.
+- *Pooling layer*: a pooling operation reduces the spatial dimensions.
 
-Also CNN use the backpropagation algorithm (adpted to the convolution operation) to update the weights of the kernel. The backpropagation algorithm is used to minimize the loss function, and it is used to update the weights of the kernel.
-
-We also use the stochastic gradient descent (SGD) algorithm to update the weights of the kernel. The SGD algorithm is used to minimize the loss function, and it is used to update the weights of the kernel. A less expensive algorithm is the *mini-batch* gradient descent, that uses a small batch of data to update the weights of the kernel. The weights are updated after each batch, and the process is repeated until the loss function converges.
+Backpropagation, adapted to the convolution operation, computes the gradients
+of the loss with respect to the kernel weights. An optimization algorithm then
+uses these gradients to update the weights. Stochastic gradient descent (SGD)
+uses one training example per update, whereas *mini-batch gradient descent*
+uses a small batch. Mini-batch updates are usually more computationally
+efficient and stable than single-example updates; training continues for
+multiple iterations or epochs.
 
 === Regularization
 
-This techniques is used to get a more general model, and avoid overfitting. One of them are the *dropout* and the *weight decay*.
+These techniques are used to improve generalization and reduce overfitting.
+Examples include *dropout* and *weight decay*.
 
-The dropout is a technique that randomly sets a fraction of the input neurons to 0 during training.
-In this way we can simplify the computation and avoid overfitting. The droput is applied to the final layer of the network, and it is used to reduce the co-adaptation of the neurons.
+Dropout randomly sets a fraction of the activations to zero during training.
+It is usually applied to hidden layers, not generally to the final output
+layer. At inference time, dropout is disabled and the activations are scaled
+according to the training convention.
 
-The main idea is to have an *ensemble* of models, and each model is trained on a different subset of the data. The dropout is used to randomly select a subset of the neurons to be dropped out during training. This way we can have a more general model, and avoid overfitting.
+Dropout reduces the co-adaptation of neurons and can be interpreted as an
+approximate ensemble of subnetworks that share parameters. Weight decay
+instead penalizes large weights, typically by adding an L2 regularization term
+to the loss.
 
 = Prediction of Genetic Variants
 
-The main problem is the SNPs (Single Nucleotide Polymorphisms) prediction. The SNPs are the most common type of genetic variation, and they are associated with many diseases. The SNPs are usually located in the non-coding regions of the genome, and they can affect the gene expression.
+One important problem is the prediction and interpretation of SNPs (single
+nucleotide polymorphisms). SNPs are a common type of genetic variation. Many
+are located in non-coding regions, where they can affect gene regulation and
+gene expression.
 
-SNP occur on avarage every 300 nucleotides, and they are usually biallelic. We have an order of billion SNPs in the human genome. A single human can have milion of nucleotide with a variation.
+SNPs are usually biallelic, although other types of variants also exist. Across
+the human population, there are millions of known SNPs. A single individual
+typically carries several million variants relative to a reference genome;
+the exact number depends on the population and on the variant-calling
+procedure.
 
-The variability in the *phenotype* is due to the variability in the SNPs.
+Some of the variability in the *phenotype* is due to genetic variation,
+including variation at SNPs, while other variability is due to environmental
+and other biological factors.
 
 #note()[
   Phenotype is the set of *observable characteristics* of an individual, and it is determined by the genotype and the environment. The genotype is the set of genes that an individual has, and it is determined by the DNA sequence. The environment is the set of external factors that can affect the phenotype, such as diet, lifestyle, and exposure to toxins.
 ]
 
-A lot of desies are associated by DNA alteration. They can be inherited or acquired. The inherited diseases are caused by mutations in the germline cells, and they can be passed from parents to offspring. The acquired diseases are caused by mutations in the somatic cells, and they cannot be passed from parents to offspring.
+Many diseases are associated with alterations in DNA. These alterations can be
+inherited or acquired. Inherited variants are present in the germline and can
+be passed from parents to offspring. Acquired variants arise in somatic cells
+and are generally not passed to offspring.
 
-It is crucial to:
-- *detect genetic variants*: this mutation are studied by a big genetic project, the 1000 Genomes Project. The project aims to identify genetic variants in the human genome
+It is important to:
+- *detect genetic variants*: projects such as the 1000 Genomes Project
+  catalogue genetic variation in human populations;
 
-- *predict their effect on the phenotype*: this is usefull to understand the genetic basis of diseases, and to develop new therapies and treatments for diseases.
+- *predict their effects on the phenotype*: this helps us understand the
+  genetic basis of disease and develop new therapies;
 
-- *understand their role in the development of diseases*: this is usefull to develop new therapies and treatments for diseases. If we found a genetic variant that is associated with a disease, we can try to study specific molecules that can interact with the protein encoded by the gene, and we can try to develop new drugs that can target the protein.
+- *understand their role in disease*: if a variant is associated with a
+  disease, we can investigate its molecular mechanism and identify possible
+  therapeutic targets.
 
 === Variants
 
-Variant can occured in coding and non-coding regions of the genome. The regulatory elements are usually located in the non-coding regions of the genome, and they can affect the gene expression. This type of mutation can be pathogenic.
+Variants can occur in both coding and non-coding regions of the genome.
+Regulatory elements are often located in non-coding regions and can affect gene
+expression. A variant in such an element can therefore be pathogenic, although
+its effect depends on its genomic context and biological consequences.
 
 === Histone modification
 
-Reminding that promoters are the region that can activate and disativate the transcription of a gene, and enhancers are the region that can increase the transcription of a gene. It could happen that a variant in the promoter can affect the transcription, we can have no mRNA produced and no protein produced.
+Promoters are regulatory regions near transcription start sites (TSSs) that
+help initiate transcription, whereas enhancers can increase transcription
+from a distance. A variant in a promoter can alter transcription; in an
+extreme case, little or no mRNA and protein may be produced.
 
-Enanchers can be located far away from the TSS (Transcription Start Site), and they can affect the transcription of a gene by interacting with the promoter. Also variant in the enancher can disativate the transcription of a gene
+Histone modifications can change chromatin accessibility and thereby influence
+whether regulatory regions are available to the transcriptional machinery.
 
-Silencer have the opposite effect of enhancers, they can decrease the transcription of a gene. Also variant in the silencer can increase the transcription of a gene.
+Enhancers can be located far from the TSS and can regulate a gene through
+three-dimensional interactions with its promoter. A variant in an enhancer can
+alter this regulation.
 
-Insulator are the region that can block the interaction between enhancers and promoters, and they can isolate an enhancer or a silencer by putting a barrier between them. Also variant in the insulator can affect the transcription of a gene.
+Silencers have the opposite effect of enhancers: they decrease transcription.
+A variant in a silencer can weaken this repression and consequently increase
+transcription.
+
+Insulators are regulatory regions that can block interactions between enhancers
+and promoters, thereby isolating a regulatory element from a gene. A variant
+in an insulator can disrupt this boundary and affect transcription.
 
 #note()[
-  Insulator prevent the expansion of heterochromatin to euchromatin. In the heterochromatin the DNA is tightly packed around histones, and it is transcriptionally inactive. In the euchromatin the DNA is loosely packed around histones, and it is transcriptionally active.
+  Insulators can also help prevent the spread of heterochromatin into
+  euchromatin. In heterochromatin, DNA is tightly packed and generally less
+  accessible for transcription. In euchromatin, DNA is more open and generally
+  more accessible for transcription.
 ]
-
-//aggiungere immagine da slide
 
 == Machine learning formulation
 - Input:
-  - A set of genetic variants (example)
-  - A set of annotation associated with the genetic variants (features)
-  - A set of labels associated with the genetic variants (labels)
+  - a set of genetic variants (examples);
+  - a set of annotations associated with the variants (features);
+  - a set of labels associated with the variants (targets).
 
-We can to predict the effect of the genetic variants on the phenotype, and we can to understand their role in the development of diseases. It's a sort of classification problem, that it's called *prioritization problem*.
-
-//aggiungere Characteriation of regulatory variants immagine
+The goal is to predict the effects of genetic variants on the phenotype and to
+understand their role in disease. This can be formulated as a classification
+or ranking task, often called *variant prioritization*.
 
 = DeepSEA
 
-Deep neural netwrok for prediction epegenetic features and pathogenic variant from DNA sequence.
+DeepSEA is a deep neural network for predicting epigenetic features from DNA
+sequence and for estimating the effects of sequence variants.
 
-By considering non coding region variants, we want to predict the effect on the phenotype variation. We also want to predict if this variant is pathogenic or not.
+For variants in non-coding regions, the model can estimate changes in
+regulatory signals, such as transcription-factor binding and chromatin
+accessibility. These predictions can provide evidence about possible effects
+on phenotype, but they do not by themselves establish that a variant is
+pathogenic.
 
-//guardare che non ho capito
+*Motif* is a short sequence pattern recognized by a DNA-binding protein, such
+as a transcription factor. A motif need not be located in a promoter; it can
+also occur in an enhancer or another regulatory region. Two possibilities are:
+- *gain of motif*: a variant creates or strengthens a motif that can be
+  recognized by a transcription factor, potentially changing transcription;
 
-*Motif* is a sequence of nucleotides wich can be bind to a promoter region. We can have:
-- Gain of motif: the variant create a new motif that can bind to a promoter region, and it can increase the transcription of a gene.
-
-- Loss of motif: the variant destroy a motif that can bind to a promoter region, and it can decrease the transcription of a gene.
+- *loss of motif*: a variant disrupts or weakens a motif, potentially
+  changing transcription in the opposite direction.
 
 #note()[
-  If we have a mutation in the promoter region we can alter the expression of the gene, and we can have a gain or loss of function.
+  A mutation in a promoter can alter gene expression and can result in a gain
+  or loss of regulatory activity.
 ]
 
-The *logo representation* of a motif is a graphical representation of the nucleotide frequency at each position in the motif. The height of each letter represents the frequency of the nucleotide at that position, and the width of each letter represents the information content of the nucleotide at that position.
-
-//rguardare
+The *sequence-logo representation* of a motif is a graphical representation of
+the nucleotide distribution at each position. The total height of a column
+represents its information content, while the relative height of each letter
+represents the frequency of that nucleotide at that position.
 === Post-transcriptional regulation
 
-Messages RNA can bind to ncRNA and can build a traslation.
+Messenger RNA (mRNA) can interact with non-coding RNAs (ncRNAs), such as
+microRNAs, which can affect mRNA stability, degradation, localization, or
+translation.
 
 == Goal
 
-Given a sequence un DNA centered in a correspondance of a specific variant. We also have sourranding context.
+Given a DNA sequence centered on a specific variant, together with its
+surrounding context, we want to:
 
-We want to:
-- Predict TF binding, histone modification in multiple cell and tissue types
-- Predict variant functionality
+- predict transcription-factor binding and histone modifications in multiple
+  cell and tissue types;
+- predict the functional effect of the variant.
 
-it's a supervised learning and it's a multi label classification problem.
+This is a supervised-learning problem and, when several regulatory features
+are predicted simultaneously, it is a multi-label classification problem.
