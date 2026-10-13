@@ -344,12 +344,11 @@ the next layer.
 
 Gradient descent can also be used for a multilayer perceptron. However, the
 gradient for the weights in the hidden layers must be computed indirectly,
-because there are no target values for hidden neurons. The required algorithm
-is called *backpropagation*.
+because there are no target values for hidden neurons (we only have target values for the output layer). The required algorithm is called *backpropagation*.
 
 === Backpropagation
 
-Backpropagation is based on the chain rule of calculus. It computes the
+Backpropagation is based on the *chain rule* of calculus. It computes the
 gradient of the error with respect to the weights in the output layer and then
 propagates this information backward through the hidden layers.
 
@@ -369,39 +368,48 @@ of every layer.
 == Performance evaluation
 
 The generalization capability of a model depends on:
-- the network architecture, including the number of layers, the number of
+- the network *architecture*, including the number of layers, the number of
   neurons per layer, and the activation functions;
-- the number of training neurons and the amount of training data. Too much
-  model capacity can lead to overfitting, while too little can lead to
-  underfitting;
-- regularization techniques, which constrain the magnitude of the weights.
-  For example, L1 and L2 regularization penalize large weights and can help
-  prevent overfitting;
-- the stopping conditions used during training.
+- the number of training neurons and the amount of *training data*. Too much model capacity can lead to overfitting, while too little can lead to underfitting;
+- *regularization* techniques, which constrain the magnitude of the weights.
 
-In practice, we need to find a good combination of these factors. They are
-called *hyperparameters*: unlike the weights, they are not learned directly
-from the training examples. A validation set can be used to compare models
-and select suitable hyperparameters.
+  #example()[
+    For example, L1 and L2 regularization penalize large weights and can help
+    prevent overfitting
+  ]
+
+- the *stopping conditions* used during training.
+
+#note()[
+  In practice, we need to find a good combination of these factors. They are
+  called *hyperparameters*: unlike the weights, they are not learned directly
+  from the training examples. A validation set can be used to compare models
+  and select suitable hyperparameters.
+]
 
 == Support vector machines
 
-An SVM is a linear classifier that finds a separating hyperplane with maximum
-margin. The margin is the distance between the hyperplane and the closest
+An SVM is a linear classifier that finds a separating *hyperplane* with *maximum
+margin*. The margin is the distance between the hyperplane and the closest
 points of the two classes. These closest points are called *support vectors*,
 because they determine the position of the maximum-margin hyperplane.
 
+#align(center)[
+  #image("../img/svm.png", width: 40%)
+]
+
 === Kernel trick
 
-A kernel function implicitly maps the data into a higher-dimensional feature
+A kernel function implicitly maps the data into a *higher-dimensional* feature
 space, where it may become linearly separable. This is called the *kernel
-trick* and allows SVMs to model nonlinear decision boundaries.
+trick* and allows SVMs to model *nonlinear* decision boundaries.
 
 Examples of kernel functions include:
 - polynomial kernel:
   $K(x, y) = (x^T y + c)^d$, where $c$ is a constant and $d$ is the degree;
+
 - Gaussian kernel:
-  $K(x, y) = exp(-||x - y||^2 / (2 sigma^2))$, where $sigma$ controls the
+  $K(x, y) = exp(-(||x - y||^2) / (2 sigma^2))$, where $sigma$ controls the
   width of the Gaussian. The associated feature space can be infinite
   dimensional.
 
@@ -411,13 +419,11 @@ when the points are not linearly separable in the original space.
 = Estimating the generalization error
 
 For every model, we need to estimate the generalization error: the error that
-the model makes on unseen data. We can use two approaches:
-- *Theoretical estimation*: use an upper bound on the expected risk based on
+the model makes on unseen data. For this purpose, we can use two main approaches:
+- *Theoretical estimation*: use an *upper bound* on the expected risk based on
   model complexity and the number of training examples. This approach is often
   not very accurate because the bound can be loose.
-- *Empirical estimation*: use held-out data to estimate the error. This
-  approach is usually more informative, but it requires enough data for both
-  training and evaluation.
+- *Empirical estimation*: use *held-out data* to estimate the error. This approach is usually more informative, but it requires enough data for both training and evaluation.
 
 == Empirical estimation methods
 
@@ -432,83 +438,246 @@ The main empirical methods are:
 
 == Hold-out method
 
-The hold-out method splits the dataset into a training set and a validation
-set. The training set is used to train the model, while the validation set is
+The hold-out method *splits the dataset* into a *training set* and a *validation
+set*. The training set is used to train the model, while the validation set is
 used to evaluate its performance.
 
 #warning()[
-  The test set should be used only for the final evaluation of the model, not
+  The test set *should* be used only for the final evaluation of the model, not
   for hyperparameter tuning or model selection.
 ]
 
-The method assumes that the training and validation sets are representative
-of, and drawn from, the same underlying distribution. This assumption may not
+The method *assumes* that the training and validation sets are *representative*
+of, and drawn from, the same *underlying distribution*. This assumption may not
 hold when the dataset is small or biased.
 
-There are two main problems:
-- With a small dataset, splitting the data reduces the number of training
-  examples. Since the generalization error usually decreases as the number of
-  training examples increases, this can worsen the estimate and the model.
-- A random split can be biased. For example, the validation set may contain
-  mostly simple examples, so the measured performance may not represent the
-  performance on more difficult examples. This is called *sampling bias*.
+There are two main $mr("problems")$:
+- With a *small dataset*, splitting the data reduces the number of training examples. Since the generalization error usually decreases as the number of training examples increases, this can worsen the estimate and the model.
 
-#note()[
-  Random hold-out can work well for a relatively large dataset. With a small
-  dataset, cross-validation or bootstrap methods can use the available data
-  more effectively.
-]
+- A random split can be *biased*. For example, the validation set may contain mostly simple examples, so the measured performance may not represent the performance on more difficult examples. This is called *sampling bias*.
+
+  #note()[
+    Random hold-out can work well for a relatively large dataset. With a small
+    dataset, cross-validation or bootstrap methods can use the available data
+    more effectively.
+  ]
 
 == Repeated hold-out
 
-Repeated hold-out repeats the hold-out procedure several times with different
-random splits. Averaging the results generally gives a more stable estimate
-than a single split, although the same example can occur in a validation set
-multiple times.
+In the repeated hold-out method, the hold-out procedure is *repeated $K$ times* with different random splits. Each *experimet is independent*.\
+During each experiment, the dataset is randomly split into a training set and a validation set. The model is trained on the training set and evaluated on the validation set.
+
+#figure(
+  caption: [Repeated hold-out: a different random test set is selected at each experiment.],
+)[
+  #align(center)[
+    #cetz.canvas(length: 0.48cm, padding: 0.2cm, {
+      import cetz.draw: *
+
+      let left = 5.0
+      let right = 18.0
+      let height = 0.72
+      let rows = (6.0, 4.45, 2.9)
+      let partitions = (
+        (0.0, 1.0, 2.0, 2.5, 3.4, 4.1, 5.0, 6.2, 7.1, 8.0, 9.0, 10.3, 11.2, 12.2, 13.0),
+        (0.0, 0.7, 1.3, 2.1, 3.7, 4.9, 6.1, 7.4, 8.6, 9.6, 10.9, 12.0, 13.0),
+        (0.0, 0.8, 1.9, 2.6, 3.8, 4.8, 6.0, 7.0, 8.3, 9.8, 10.8, 12.0, 13.0),
+      )
+      let test-cells = ((1, 4, 8, 12), (0, 2, 6, 10), (1, 5, 9, 11))
+
+      line((left, 7.55), (right, 7.55), stroke: (paint: black, thickness: 0.8pt))
+      line((left, 7.55), (left, 7.1), stroke: (paint: black, thickness: 0.8pt))
+      line((right, 7.55), (right, 7.1), stroke: (paint: black, thickness: 0.8pt))
+      line((left + 0.25, 7.55), (right - 0.25, 7.55), stroke: (paint: black, thickness: 1.0pt))
+      polygon((left + 0.05, 7.55), 3, angle: 90deg, radius: (0.22, 0.14), fill: black, stroke: none)
+      polygon((right - 0.05, 7.55), 3, angle: 270deg, radius: (0.22, 0.14), fill: black, stroke: none)
+      content((8.0, 8.0), text(size: 9pt)[Total number of examples])
+
+      for (row, y) in rows.enumerate() {
+        content((1.0, y + 0.18), text(size: 8pt)[Experiment #(row + 1)])
+        let cuts = partitions.at(row)
+        for index in range(cuts.len() - 1) {
+          let x0 = left + cuts.at(index)
+          let x1 = left + cuts.at(index + 1)
+          let is-test = test-cells.at(row).contains(index)
+          rect(
+            (x0, y),
+            (x1, y + height),
+            fill: if is-test { luma(82%) } else { white },
+            stroke: (paint: black, thickness: 0.7pt),
+          )
+        }
+      }
+      content((20.35, 6.8), text(size: 8pt)[Test examples])
+      line((18.25, 6.82), (17.25, 6.42), stroke: (paint: black, thickness: 0.8pt))
+      polygon((17.25, 6.42), 3, angle: 225deg, radius: (0.16, 0.1), fill: black, stroke: none)
+    })
+  ]
+]
+
+The results are *averaged* to provide a more stable estimate of the generalization error:
+$
+  E = 1/K sum_(i=1)^K E_i
+$
 
 == K-fold cross-validation
 
 In $k$-fold cross-validation, the examples are divided into $k$ folds of
-approximately equal size, with no overlap. We train the model $k$ times. At
+approximately *equal size*, with *no overlap*. We train the model $k$ times. At
 each iteration, one fold is used as the validation set and the other $k-1$
-folds are used for training. The average validation performance is used as an
-estimate of the generalization error.
+folds are used for training.
+#figure(
+  caption: [K-fold cross-validation: each fold is used once as the test set.],
+)[
+  #align(center)[
+    #cetz.canvas(length: 0.48cm, padding: 0.2cm, {
+      import cetz.draw: *
+
+      let left = 5.0
+      let right = 18.0
+      let height = 0.82
+      let width = (right - left) / 5
+      let ys = (6.2, 4.65, 3.1, 1.55)
+
+      line((left, 7.65), (right, 7.65), stroke: (paint: black, thickness: 0.8pt))
+      line((left, 7.65), (left, 7.2), stroke: (paint: black, thickness: 0.8pt))
+      line((right, 7.65), (right, 7.2), stroke: (paint: black, thickness: 0.8pt))
+      line((left + 0.25, 7.65), (right - 0.25, 7.65), stroke: (paint: black, thickness: 1.0pt))
+      polygon((left + 0.05, 7.65), 3, angle: 90deg, radius: (0.22, 0.14), fill: black, stroke: none)
+      polygon((right - 0.05, 7.65), 3, angle: 270deg, radius: (0.22, 0.14), fill: black, stroke: none)
+      content((8.1, 8.1), text(size: 9pt)[Total number of examples])
+
+      for (row, y) in ys.enumerate() {
+        content((1.0, y + 0.22), text(size: 8pt)[Experiment #(row + 1)])
+        for fold in range(5) {
+          let x0 = left + fold * width
+          let x1 = x0 + width
+          rect(
+            (x0, y),
+            (x1, y + height),
+            fill: if fold == row { luma(82%) } else { white },
+            stroke: (paint: black, thickness: 0.8pt),
+          )
+        }
+      }
+      content((20.35, 1.2), text(size: 8pt)[Test examples])
+      line((18.25, 1.25), (17.35, 1.75), stroke: (paint: black, thickness: 0.8pt))
+      polygon((17.35, 1.75), 3, angle: 135deg, radius: (0.16, 0.1), fill: black, stroke: none)
+    })
+  ]
+]
+
+The average validation performance is used as an
+estimate of the generalization error:
+$
+  E = 1/k sum_(i=1)^k E_i
+$
+
 
 #note()[
-  Every example is used as a validation example exactly once. This differs
-  from repeated hold-out, where the same example can be selected for
-  validation multiple times.
+  Every *example is used as a validation example exactly once*. This differs
+  from repeated hold-out, where the same example can be selected for validation multiple times.
 ]
 
 == Leave-one-out cross-validation
 
-Leave-one-out cross-validation is the special case in which the number of
-folds equals the number of examples. There are $n$ folds, each containing one
-example; the remaining $n-1$ examples are used for training.
+Leave-one-out cross-validation is the special case in which the *number of
+folds equals the number of examples*. For a dataset with $N$ examples, we perform $N$ iterations. In each iteration, *one example* is used as the *validation set* and the remaining *$N-1$ examples* are used for *training*.
 
-This method provides the largest possible training set at each iteration, but
-the estimate can have high variance because each validation set contains only
+This method provides the largest possible training set at each iteration, but the *estimate* can have *high variance* because each validation set contains only
 one example.
 
 #warning()[
-  We should not use the training error as an estimate of the generalization
+  We should *not use* the *training error* *as an estimate* of the generalization
   error. The model has been fitted to the training set, so its error on that
   set is optimistically low. This is a typical effect of overfitting.
 ]
 
 == ROC curve
 
-The receiver operating characteristic (ROC) curve represents the performance
-of a binary classifier as its discrimination threshold varies. It plots the
-true positive rate (TPR) against the false positive rate (FPR) for different
-thresholds.
+The Receiver Operating Characteristic (ROC) curve represents the performance
+of a binary classifier as its discrimination threshold varies. It plots the *True Positive Rate* (TPR) against the *False Positive Rate* (FPR) for different
+thresholds:
+$
+  "TPR" = "TP" / ("TP" + "FN"), quad "FPR" = "FP" / ("FP" + "TN")
+$
 
-The ROC curve can also be interpreted as a ranking evaluation: it measures how
-well the classifier ranks positive examples above negative examples. The area
-under the curve (AUC) summarizes this behavior in a single value between $0$
-and $1$. An AUC of $1$ indicates perfect ranking, while an AUC of $0.5$
-corresponds to random ranking.
+The ROC curve can also be interpreted as a *ranking evaluation*: it measures how
+well the classifier ranks positive examples above negative examples.
+The *Area Under the Curve* (AUC) summarizes this behavior in a single value between $0$ and $1$:
+- *AUC = 1*: Perfect ranking.
+- *AUC = 0.5*: Random ranking (corresponds to the diagonal line).
+- *AUC < 0.5*: Worse than random (inverting the predictions would yield a better model).
 
-A good ROC curve is close to the top-left corner, indicating a high TPR and a
-low FPR. A curve close to the diagonal corresponds to performance close to
-random classification.
+#figure(
+  caption: [Interpretation of different AUC values through ROC curves.],
+)[
+  #align(center)[
+    #cetz.canvas(length: 0.7cm, padding: 0.2cm, {
+      import cetz.draw: *
+
+      let draw-roc-panel(origin, title, auc, curve, curve-paint) = {
+        let ox = origin.at(0)
+        let oy = origin.at(1)
+        let size = 3.6
+
+        // Axes: the horizontal axis is FPR and the vertical axis is TPR.
+        line((ox, oy), (ox + size, oy), stroke: (paint: black, thickness: 0.8pt))
+        line((ox, oy), (ox, oy + size), stroke: (paint: black, thickness: 0.8pt))
+        line((ox + size, oy), (ox + size - 0.18, oy + 0.08), stroke: (paint: black, thickness: 0.8pt))
+        line((ox, oy + size), (ox + 0.08, oy + size - 0.18), stroke: (paint: black, thickness: 0.8pt))
+
+        // The diagonal is the random-classifier reference.
+        line((ox, oy), (ox + size, oy + size), stroke: (paint: gray, thickness: 0.7pt, dash: "dashed"))
+
+        // A cubic Bézier curve gives the ROC its characteristic smooth shape.
+        let start = curve.at(0)
+        let ctrl-1 = curve.at(1)
+        let ctrl-2 = curve.at(2)
+        let end = curve.at(3)
+        bezier(
+          (ox + start.at(0) * size, oy + start.at(1) * size),
+          (ox + end.at(0) * size, oy + end.at(1) * size),
+          (ox + ctrl-1.at(0) * size, oy + ctrl-1.at(1) * size),
+          (ox + ctrl-2.at(0) * size, oy + ctrl-2.at(1) * size),
+          stroke: (paint: curve-paint, thickness: 1.8pt),
+        )
+
+        content((ox + 0.2, oy + size + 0.45), text(size: 9pt)[#title])
+        content((ox + 1.2, oy - 0.65), text(size: 8pt)[FPR])
+        content((ox - 0.6, oy + 1.4), text(size: 8pt)[TPR], angle: 90deg)
+        content((ox + 1.1, oy + size + 0.05), text(size: 8pt)[AUC = #auc])
+        content((ox - 0.12, oy - 0.25), text(size: 7pt)[0])
+        content((ox + size - 0.08, oy - 0.25), text(size: 7pt)[1])
+        content((ox - 0.3, oy - 0.05), text(size: 7pt)[0])
+        content((ox - 0.3, oy + size - 0.05), text(size: 7pt)[1])
+      }
+
+      draw-roc-panel(
+        (1.5, 1.0),
+        [Perfect classifier],
+        [1],
+        ((0, 0), (0.02, 0.72), (0.16, 0.98), (1, 1)),
+        teal,
+      )
+      draw-roc-panel(
+        (7.0, 1.0),
+        [Random classifier],
+        [0.5],
+        ((0, 0), (0.20, 0.12), (0.80, 0.88), (1, 1)),
+        orange,
+      )
+      draw-roc-panel(
+        (12.5, 1.0),
+        [Worse than random],
+        [0],
+        ((0, 0), (0.72, 0.02), (0.98, 0.16), (1, 1)),
+        maroon,
+      )
+    })
+  ]
+]
+
+A *good* ROC curve is bowed towards the top-left corner, indicating a high TPR and a
+low FPR across various thresholds. A curve close to the diagonal corresponds to performance close to
+*random classification*.
