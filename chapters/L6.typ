@@ -6,20 +6,19 @@ Deep learning model are neural networks with multiple layers. They can learn com
 
 The basic building block of a neural network is the *neuron*, which computes a *weighted sum* of its inputs and applies a *nonlinear activation function*:
 $
-  "Weigheted sum" &= z = sum_(i=1)^(n) w_i x_i + b \
-  "Activation" &= y = f(z)
+  "Weigheted sum" & = z = sum_(i=1)^(n) w_i x_i + b \
+     "Activation" & = y = f(z)
 $
-The weights are learned during training using backpropagation and an optimization algorithm, such as stochastic gradient descent (SGD). During the backpropagation we compute the gradient of the loss function with respect to the weights and update them accordingly to a learning rate: 
+The weights are learned during training using backpropagation and an optimization algorithm, such as stochastic gradient descent (SGD). During the backpropagation we compute the gradient of the loss function with respect to the weights and update them accordingly to a learning rate:
 $
   (delta E) / (delta w) = mr((delta E) / (delta y)) * mb((delta y) / (delta z)) * mg((delta z) / (delta w_i))
 $
 where:
-- 
+- $mr((delta E) / (delta y))$ = it quantifies the error on the output of this specific neuron. If the neuron is in the output layer, it is the difference between the predicted and true values. If it is in a hidden layer, it is computed as a weighted sum of the errors of the neurons in the next layer.
 
+- $mb((delta y) / (delta z))$ = it is the derivative of the activation function. It quantifies how much the output of the neuron changes with respect to its input.
 
-
-
-
+- $mg((delta z) / (delta w_i))$ = it is the derivative of the weighted sum with respect to the weight. It quantifies how much the input of the neuron changes with respect to its weight.
 
 Deep learning models can suffer from the *vanishing-gradient* and
 *exploding-gradient* problems:
@@ -62,11 +61,7 @@ Deep learning models can suffer from the *vanishing-gradient* and
       })
     ]
   ]
-  helps *reduce saturation* for positive inputs. Its derivative is $1$ for positive values and $0$ for negative values.
-
-
-
-
+  helps *reduce saturation* for positive inputs. Its derivative is $1$ for positive values and $0$ for negative values. Sinche the derivate $mb((delta y) / (delta z))$ is always $1$ for positive inputs, it helps mitigate the vanishing-gradient problem. However, it can lead to the *dying ReLU* problem, where neurons become inactive and stop learning if they consistently receive negative inputs.
 ]
 
 
