@@ -27,7 +27,7 @@ $
   Delta w_i = -eta (delta E) / (delta w_i), quad w_i <- w_i + Delta w_i
 $
 
-Deep fully connected neural networks (Multi-Layer Perceptrons, or MLPs) can suffer from the *vanishing-gradient* and *exploding-gradient* problems:
+Deep fully connected neural networks (Multi-Layer Perceptrons, or MLPs) can suffer from the *$mr("vanishing-gradient")$* and *$mr("exploding-gradient")$* problems:
 - *Vanishing gradient*: if the gradients become *too small* as they are propagated backward through many layers, the weights in the earlier layers are barely updated, and the model may fail to learn.
 - *Exploding gradient*: if the gradients become *too large*, the weight updates become excessively large, leading to numerical instability and divergence during training.
 
@@ -68,12 +68,19 @@ Deep fully connected neural networks (Multi-Layer Perceptrons, or MLPs) can suff
 
 == CNN (Convolutional Neural Network)
 
-In a Convolutional Neural Network (CNN), neurons in a layer are only locally connected to small regions of the previous layer, unlike in a fully connected neural network (FNN/MLP) where every unit is connected to all units in the preceding layer. Furthermore, *padding* can be applied to preserve the spatial dimensions of the feature maps and allow the network to properly process values near the borders of the input.
+In a Convolutional Neural Network (CNN), neurons in a layer are only *locally connected* to small regions of the previous layer, unlike in a fully connected neural network (FNN/MLP) where every unit is connected to all units in the preceding layer. Furthermore, *padding* can be applied to preserve the spatial dimensions of the feature maps and allow the network to properly process values near the borders of the input.
 
-In the discrete one-dimensional case, the convolution of an input $x$ with a kernel (or filter) $w$ produces a feature map $s$ by sliding the kernel over the input and computing a weighted sum at each position:
-$
-  s(t) = (x * w)(t) = sum_(a=-infinity)^(infinity) x(a) w(t-a)
-$
+#theorem(title: "Convolution")[
+  Given an input $x$ and a kernel (or filter) $w$, the convolution operation produces a feature map $s$ by sliding the kernel over the input and computing a weighted sum at each position. For each $a in A$ where $A$ is the set of all valid positions of the kernel over the input, the convolution is defined as:
+  $
+    s(t) = integral_(a in A) x(a) w(t-a)
+  $
+  this is the continuous convolution. In the discrete case, the integral is replaced by a sum:
+  $
+    s(t) = sum_(a in A) x(a) w(t-a)
+  $
+  we can see the convolution as a linear operator that transforms the input $x$ into the output $s$ by applying the kernel $w$ across all valid positions. The kernel acts as a feature detector, capturing local patterns in the input data.
+]
 
 Since images and spatial data are typically represented as two-dimensional matrices, the 2D discrete convolution of an input $I$ with a kernel $K$ is written as a sum over rows and columns:
 $
@@ -87,6 +94,149 @@ $
   $
   In the discrete mathematical definition, the kernel is effectively flipped relative to the input because as the indices $m$ and $n$ increase, the indices into the kernel $(i-m, j-n)$ decrease.
 ]
+
+#figure(
+  caption: [Example of 2D discrete convolution (without kernel flipping) with a $2 times 2$ kernel sliding over a $3 times 4$ input.],
+)[
+  #align(center)[
+    #cetz.canvas(length: 0.85cm, padding: 0.2cm, {
+      import cetz.draw: *
+
+      // --- INPUT MATRIX (3x4) ---
+      let in-x = 0.0
+      let in-y = 4.2
+      let cw = 0.85
+      let ch = 0.85
+      let gap = 0.1
+
+      content((in-x, in-y + 3 * (ch + gap) + 0.35), anchor: "west", text(size: 9pt)[Input $I(i+m, j+n)$])
+
+      let in-labels = (
+        ("a", "b", "c", "d"),
+        ("e", "f", "g", "h"),
+        ("i", "j", "k", "l"),
+      )
+
+      for r in range(3) {
+        for c in range(4) {
+          let x = in-x + c * (cw + gap)
+          let y = in-y + (2 - r) * (ch + gap)
+          rect((x, y), (x + cw, y + ch), stroke: 0.7pt + black)
+          content((x + cw / 2, y + ch / 2), text(size: 9pt)[$#in-labels.at(r).at(c)$])
+        }
+      }
+
+      // Highlight box around the top-left 2x2 patch (a, b, e, f)
+      let hl-pad = 0.08
+      let hl-x1 = in-x - hl-pad
+      let hl-y1 = in-y + (ch + gap) - hl-pad
+      let hl-x2 = in-x + 2 * cw + gap + hl-pad
+      let hl-y2 = in-y + 3 * ch + 2 * gap + hl-pad
+      rect((hl-x1, hl-y1), (hl-x2, hl-y2), stroke: (paint: teal, thickness: 1.2pt))
+
+      // --- KERNEL MATRIX (2x2) ---
+      let k-x = 4.8
+      let k-y = 4.65
+
+      content((k-x, k-y + 2 * (ch + gap) + 0.35), anchor: "west", text(size: 9pt)[Kernel $K(m, n)$])
+
+      let k-labels = (
+        ("w", "x"),
+        ("y", "z"),
+      )
+
+      for r in range(2) {
+        for c in range(2) {
+          let x = k-x + c * (cw + gap)
+          let y = k-y + (1 - r) * (ch + gap)
+          rect((x, y), (x + cw, y + ch), stroke: 0.7pt + black)
+          content((x + cw / 2, y + ch / 2), text(size: 9pt)[$#k-labels.at(r).at(c)$])
+        }
+      }
+
+      // Outer box around the 2x2 Kernel
+      let khl-x1 = k-x - hl-pad
+      let khl-y1 = k-y - hl-pad
+      let khl-x2 = k-x + 2 * cw + gap + hl-pad
+      let khl-y2 = k-y + 2 * ch + gap + hl-pad
+      rect((khl-x1, khl-y1), (khl-x2, khl-y2), stroke: (paint: teal, thickness: 1.2pt))
+
+      // --- OUTPUT MATRIX (2x3) ---
+      let out-x = 0.4
+      let out-y = 0.0
+      let ow = 2.65
+      let oh = 1.45
+      let ogap-x = 0.35
+      let ogap-y = 0.55
+
+      content((out-x + 1.8, out-y + 2 * oh + ogap-y + 0.35), anchor: "west", text(size: 9pt)[Output])
+      content((out-x - 0.9, out-y + oh + ogap-y / 2), text(size: 10pt)[$S(i, j)$])
+
+      let out-exprs = (
+        (
+          $a w + b x + \ e y + f z$,
+          $b w + c x + \ f y + g z$,
+          $c w + d x + \ g y + h z$,
+        ),
+        (
+          $e w + f x + \ i y + j z$,
+          $f w + g x + \ j y + k z$,
+          $g w + h x + \ k y + l z$,
+        ),
+      )
+
+      let out-coords = (
+        ("(1,1)", "(1,2)", "(1,3)"),
+        ("(2,1)", "(2,2)", "(2,3)"),
+      )
+
+      for r in range(2) {
+        for c in range(3) {
+          let x = out-x + c * (ow + ogap-x)
+          let y = out-y + (1 - r) * (oh + ogap-y)
+          rect((x, y), (x + ow, y + oh), stroke: 0.7pt + black)
+          content((x + ow / 2, y + oh / 2), text(size: 8.5pt)[#out-exprs.at(r).at(c)])
+          content((x + ow / 2, y - 0.25), text(size: 8pt, fill: gray.darken(40%))[$#out-coords.at(r).at(c)$])
+        }
+      }
+
+      // Outer highlight box around top-left Output cell (1,1)
+      let ohl-x1 = out-x - hl-pad
+      let ohl-y1 = out-y + oh + ogap-y - hl-pad
+      let ohl-x2 = out-x + ow + hl-pad
+      let ohl-y2 = out-y + 2 * oh + ogap-y + hl-pad
+      rect((ohl-x1, ohl-y1), (ohl-x2, ohl-y2), stroke: (paint: teal, thickness: 1.2pt))
+
+      // --- ARROWS ---
+      // Arrow from Input 2x2 patch to Output (1,1) left side
+      let mid-in-y = (hl-y1 + hl-y2) / 2
+      let mid-out-y = (ohl-y1 + ohl-y2) / 2
+      line(
+        (hl-x1, mid-in-y),
+        (hl-x1 - 0.5, mid-in-y),
+        (hl-x1 - 0.5, mid-out-y),
+        (ohl-x1, mid-out-y),
+        stroke: (paint: teal, thickness: 1pt),
+        mark: (end: ">", fill: teal),
+      )
+
+      // Arrow from Kernel bottom to Output (1,1) top side
+      let mid-k-x = (khl-x1 + khl-x2) / 2
+      let target-out-x = out-x + ow * 0.35
+      let mid-way-y = (khl-y1 + ohl-y2) / 2 - 0.1
+      line(
+        (mid-k-x, khl-y1),
+        (mid-k-x, mid-way-y),
+        (target-out-x, mid-way-y),
+        (target-out-x, ohl-y2),
+        stroke: (paint: teal, thickness: 1pt),
+        mark: (end: ">", fill: teal),
+      )
+    })
+  ]
+]
+
+
 
 === Cross-correlation
 
@@ -123,15 +273,15 @@ $
 
 In a classical FNN (or MLP), every neuron is connected to every neuron in the previous layer, resulting in a very large number of connections and parameters, as well as high computational complexity.
 
-In a convolutional layer, we achieve *sparse connectivity* (or sparse interactions) by making the kernel smaller than the input: each neuron is connected only to a small local region of the previous layer, whose size is determined by the kernel dimensions. Consequently, the layer requires far fewer parameters and operations, while stacking multiple layers allows the network to combine low-level local features into higher-level, increasingly global abstractions.
-
+In a convolutional layer, we achieve *sparse connectivity* (or sparse interactions) by making the *kernel smaller than the input*: each neuron is connected only to a small local region of the previous layer, whose size is determined by the kernel dimensions. Consequently, the layer requires far fewer parameters and operations, while stacking multiple layers allows the network to combine low-level local features into higher-level, increasingly global abstractions.
+9
 #note()[
   Sparse connectivity does not prevent the network from capturing global information. Through successive convolutional layers, the *receptive field* of a neuron in a deeper layer grows, eventually covering a large portion—or the entirety—of the original input.
 ]
 
 === Parameter sharing
 
-In a standard FNN, each weight is used exactly once to compute the output of a layer, as it is tied to a specific connection between two neurons.
+In a standard FNN, each *weight is used exactly once* to compute the output of a layer, as it is tied to a specific connection between two neurons.
 
 In a convolutional layer, we have *parameter sharing*: the exact same kernel weights are applied across all spatial positions of the input. For instance, if a 2D kernel has size $3 times 3$, the network learns only $9$ weights per input channel (plus typically one bias term per output channel), rather than learning a separate set of weights for every spatial location.
 
@@ -159,9 +309,10 @@ During training, *backpropagation* (adapted to account for weight sharing and po
 
 Regularization techniques are employed to improve generalization on unseen data and reduce *overfitting*. Common strategies include *weight decay* ($L_1$ and $L_2$ norm regularization) and *dropout*:
 - *Weight decay* penalizes large parameter values by adding a regularization term (such as the $L_2$ norm or $L_1$ norm of the weights) to the loss function, encouraging simpler models.
+
 - *Dropout* randomly sets a fraction of neuron activations to zero during each training step. It is typically applied to hidden layers rather than the final output layer. At inference (test) time, dropout is disabled and the activations are scaled appropriately to account for the full network being active.
 
-Dropout prevents the *co-adaptation* of neurons (forcing units to learn robust features independently) and can be interpreted as training an approximate *ensemble of exponentially many subnetworks* that share parameters.
+  Dropout prevents the *co-adaptation* of neurons (forcing units to learn robust features independently) and can be interpreted as training an approximate *ensemble of exponentially many subnetworks* that share parameters.
 
 = Prediction of Genetic Variants
 
