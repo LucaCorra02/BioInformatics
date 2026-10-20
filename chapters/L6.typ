@@ -2,35 +2,37 @@
 
 = Deep Learning
 
-Deep learning model are neural networks with multiple layers. They can learn complex representations of data and have been successful in many applications.
+Deep learning models are neural networks with multiple layers. They can learn complex hierarchical representations of data and have proven successful across a wide range of applications, including genomic medicine and computational biology.
 
-The basic building block of a neural network is the *neuron*, which computes a *weighted sum* of its inputs and applies a *nonlinear activation function*:
+The basic building block of a neural network is the *neuron* (inspired by the biological neuron and formalized in early models such as the *perceptron*), which computes a *weighted sum* of its inputs and applies a *nonlinear activation function*:
 $
-  "Weigheted sum" & = z = sum_(i=1)^(n) w_i x_i + b \
-     "Activation" & = y = f(z)
+  "Weighted sum" & = z = sum_(i=1)^(n) w_i x_i + b \
+    "Activation" & = y = f(z)
 $
-The weights are learned during training using backpropagation and an optimization algorithm, such as stochastic gradient descent (SGD). During the backpropagation we compute the gradient of the loss function with respect to the weights and update them accordingly to a learning rate:
+where $x_i$ are the inputs, $w_i$ are the synaptic weights, $b$ (often denoted as $w_0$) is the bias term, and $f$ is the activation function (e.g., step function, sigmoid, or ReLU).
+
+The weights are learned during training by minimizing an error (or loss) function $E$ using *backpropagation* and an optimization algorithm, such as *stochastic gradient descent (SGD)*. During backpropagation, we compute the gradient of the loss function with respect to each weight $w_i$ using the chain rule, and update the weights according to a learning rate $eta$:
 $
-  (delta E) / (delta w) = mr((delta E) / (delta y)) * mb((delta y) / (delta z)) * mg((delta z) / (delta w_i))
+  (delta E) / (delta w_i) = mr((delta E) / (delta y)) * mb((delta y) / (delta z)) * mg((delta z) / (delta w_i))
 $
 where:
-- $mr((delta E) / (delta y))$ = it quantifies the error on the output of this specific neuron. If the neuron is in the output layer, it is the difference between the predicted and true values. If it is in a hidden layer, it is computed as a weighted sum of the errors of the neurons in the next layer.
+- $mr((delta E) / (delta y))$ quantifies the error with respect to the output of the specific neuron. If the neuron is in the output layer, it depends directly on the difference between the predicted and true values. If it is in a hidden layer, it is computed recursively as a weighted sum of the errors propagated backward from the neurons in the next layer.
 
-- $mb((delta y) / (delta z))$ = it is the derivative of the activation function. It quantifies how much the output of the neuron changes with respect to its input.
+- $mb((delta y) / (delta z))$ is the derivative of the activation function $f'(z)$. It measures how much the neuron's output changes in response to a change in its internal potential $z$.
 
-- $mg((delta z) / (delta w_i))$ = it is the derivative of the weighted sum with respect to the weight. It quantifies how much the input of the neuron changes with respect to its weight.
+- $mg((delta z) / (delta w_i))$ is the derivative of the weighted sum with respect to the weight $w_i$ (which equals the corresponding input $x_i$). It measures how much the pre-activation input $z$ changes with respect to that specific weight.
 
-Deep learning models can suffer from the *vanishing-gradient* and
-*exploding-gradient* problems:
-- If the gradient becomes *too small*, the weights are barely updated and the model may fail to learn
+Once the gradient is computed, each weight is updated in the direction opposite to the gradient:
+$
+  Delta w_i = -eta (delta E) / (delta w_i), quad w_i <- w_i + Delta w_i
+$
 
-- if it becomes *too large*, the updates can become unstable.
-
-
-
+Deep fully connected neural networks (Multi-Layer Perceptrons, or MLPs) can suffer from the *vanishing-gradient* and *exploding-gradient* problems:
+- *Vanishing gradient*: if the gradients become *too small* as they are propagated backward through many layers, the weights in the earlier layers are barely updated, and the model may fail to learn.
+- *Exploding gradient*: if the gradients become *too large*, the weight updates become excessively large, leading to numerical instability and divergence during training.
 
 #note()[
-  The *ReLU* activation function $f(x) = max(0, x)$
+  The *ReLU* (Rectified Linear Unit) activation function is defined as $f(x) = max(0, x)$:
 
   #figure()[
     #align(center)[
@@ -61,269 +63,184 @@ Deep learning models can suffer from the *vanishing-gradient* and
       })
     ]
   ]
-  helps *reduce saturation* for positive inputs. Its derivative is $1$ for positive values and $0$ for negative values. Sinche the derivate $mb((delta y) / (delta z))$ is always $1$ for positive inputs, it helps mitigate the vanishing-gradient problem. However, it can lead to the *dying ReLU* problem, where neurons become inactive and stop learning if they consistently receive negative inputs.
+  ReLU helps *prevent saturation* for positive inputs. Its derivative is $1$ for positive values ($x > 0$) and $0$ for negative values ($x < 0$). Since the derivative $mb((delta y) / (delta z))$ is constantly equal to $1$ for positive inputs, it helps mitigate the vanishing-gradient problem. However, it can lead to the *dying ReLU* problem, where neurons become permanently inactive and stop learning if their inputs consistently fall into the negative region.
 ]
-
-
-
 
 == CNN (Convolutional Neural Network)
 
-In a CNN, neurons in a layer are locally connected to small regions of the
-previous layer, unlike in a fully connected neural network (FNN). Padding can
-preserve the spatial dimensions of the feature maps and allow the network to
-process pixels near the image borders.
+In a Convolutional Neural Network (CNN), neurons in a layer are only locally connected to small regions of the previous layer, unlike in a fully connected neural network (FNN/MLP) where every unit is connected to all units in the preceding layer. Furthermore, *padding* can be applied to preserve the spatial dimensions of the feature maps and allow the network to properly process values near the borders of the input.
 
-In one dimension, the convolution of an input $x$ with a kernel $w$ is a
-function $s$ obtained by sliding the kernel over the input and computing a
-weighted sum:
+In the discrete one-dimensional case, the convolution of an input $x$ with a kernel (or filter) $w$ produces a feature map $s$ by sliding the kernel over the input and computing a weighted sum at each position:
 $
-  s(t) = (x * w)(t) = sum_{a=-infinity}^{infinity} x(a) w(t-a)
+  s(t) = (x * w)(t) = sum_(a=-infinity)^(infinity) x(a) w(t-a)
 $
 
-Since images are usually represented as two-dimensional matrices, the
-convolution can be written as a sum over rows and columns:
+Since images and spatial data are typically represented as two-dimensional matrices, the 2D discrete convolution of an input $I$ with a kernel $K$ is written as a sum over rows and columns:
 $
-  S(i,j) = (I*K)(i,j) = sum_m sum_n I(m,n) K(i-m, j-n)
+  S(i,j) = (I * K)(i,j) = sum_m sum_n I(m,n) K(i-m, j-n)
 $
+
 #note()[
-  Convolution is commutative: $I * K = K * I$. In the discrete formula, the
-  kernel is effectively flipped because it is evaluated at $(i-m, j-n)$.
+  Convolution is *commutative*: $I * K = K * I$, meaning we can equivalently write:
+  $
+    S(i,j) = (K * I)(i,j) = sum_m sum_n I(i-m, j-n) K(m,n)
+  $
+  In the discrete mathematical definition, the kernel is effectively flipped relative to the input because as the indices $m$ and $n$ increase, the indices into the kernel $(i-m, j-n)$ decrease.
 ]
 
 === Cross-correlation
 
-Deep-learning libraries usually implement *cross-correlation* rather than
-mathematical convolution, because the kernel is not flipped. In two dimensions,
-it can be written as:
+Deep learning libraries usually implement *cross-correlation* rather than strict mathematical convolution, meaning the kernel slides over the input *without* being flipped. In two dimensions, it is defined as:
 $
-  S(i,j) = sum_m sum_n I(i+m, j+n) K(m,n)
+  S(i,j) = (I * K)(i,j) = sum_m sum_n I(i+m, j+n) K(m,n)
 $
 
 #example()[
-  Given the cross-correlation formula:
+  Consider the one-dimensional cross-correlation formula:
   $
     S(i) = sum_m I(i+m) K(m)
   $
 
+  Suppose we have the following 1D input $I$ and kernel $K$:
+  - $I = [1, 3, 1, 2, 1]$
+  - $K = [1, 2, 1]$
 
-  If we have:
-  - I = [1,3,1,2,1]
-  - K = [1,2,1]
-  We want to compute S[0]. We need to move m from 0 to 2, since the kernel has length 3. So we have:
+  To compute $S[0]$, we let the index $m$ range from $0$ to $2$, since the kernel has length $3$:
   $
-    S[0] = I[0]*K[0] + I[1]*K[1] + I[2]*K[2] = 1*1 + 3*2 + 1*1 = 8
+    S[0] = I[0] dot K[0] + I[1] dot K[1] + I[2] dot K[2] = 1 dot 1 + 3 dot 2 + 1 dot 1 = 8
   $
-  To compute $S[1]$, we shift the kernel to the right by $1$:
+  To compute $S[1]$, we shift the kernel to the right by $1$ position (stride $1$):
   $
-    S[1] = I[1]*K[0] + I[2]*K[1] + I[3]*K[2] = 3*1 + 1*2 + 2*1 = 7
+    S[1] = I[1] dot K[0] + I[2] dot K[1] + I[3] dot K[2] = 3 dot 1 + 1 dot 2 + 2 dot 1 = 7
   $
-  In the next step we move the kernel in the position 2, so we have:
+  In the next step, we shift the kernel to position $2$:
   $
-    S[2] = I[2]*K[0] + I[3]*K[1] + I[4]*K[2] = 1*1 + 2*2 + 1*1 = 6
+    S[2] = I[2] dot K[0] + I[3] dot K[1] + I[4] dot K[2] = 1 dot 1 + 2 dot 2 + 1 dot 1 = 6
   $
 ]
 
 === Sparse connectivity
 
-In a classical FNN, each neuron is connected to every neuron in the previous
-layer, resulting in many connections and parameters.
+In a classical FNN (or MLP), every neuron is connected to every neuron in the previous layer, resulting in a very large number of connections and parameters, as well as high computational complexity.
 
-In a convolutional layer, we have *sparse connectivity*: each neuron is
-connected only to a small local region of the input. This region depends on the
-kernel size. Consequently, the layer has fewer connections and parameters,
-while successive layers can combine local features into increasingly global
-ones.
+In a convolutional layer, we achieve *sparse connectivity* (or sparse interactions) by making the kernel smaller than the input: each neuron is connected only to a small local region of the previous layer, whose size is determined by the kernel dimensions. Consequently, the layer requires far fewer parameters and operations, while stacking multiple layers allows the network to combine low-level local features into higher-level, increasingly global abstractions.
 
 #note()[
-  Sparse connectivity does not prevent global information from being captured.
-  Through successive convolutional layers, the receptive field of a neuron
-  can eventually cover the entire input.
+  Sparse connectivity does not prevent the network from capturing global information. Through successive convolutional layers, the *receptive field* of a neuron in a deeper layer grows, eventually covering a large portion—or the entirety—of the original input.
 ]
 
 === Parameter sharing
 
-In an FNN, the parameters are specific to individual connections, so the
-number of parameters can be large.
+In a standard FNN, each weight is used exactly once to compute the output of a layer, as it is tied to a specific connection between two neurons.
 
-In a convolutional layer, we have *parameter sharing*: the same kernel is
-applied at every spatial position. If the kernel has size $3 times 3$, it has
-9 weights per input channel (plus, usually, one bias per output channel), not
-9 separate weights for every neuron.
+In a convolutional layer, we have *parameter sharing*: the exact same kernel weights are applied across all spatial positions of the input. For instance, if a 2D kernel has size $3 times 3$, the network learns only $9$ weights per input channel (plus typically one bias term per output channel), rather than learning a separate set of weights for every spatial location.
 
-This reduces the number of parameters and makes the detector translation
-equivariant: shifting the input shifts the feature map.
+This drastically reduces memory usage and the total number of parameters, and makes the representation *equivariant to translation*: shifting the input shifts the resulting feature map in the same way.
 
 === Pooling layer
 
-Pooling layers introduce a degree of local translation invariance and
-abstraction. They reduce the spatial dimensions of a feature map and retain
-an aggregated summary, such as a maximum or an average. Pooling is often
-applied after a convolution and its activation function.
+*Pooling layers* introduce a degree of local *translation invariance* and spatial abstraction. They reduce the spatial dimensions of a feature map by replacing the output at a given location with a summary statistic of the nearby outputs, such as the maximum value (*max pooling*) or the average value (*average pooling*) within a local window.
 
-An activation function, usually ReLU, is typically applied after the
-convolution and before pooling, although the exact ordering can vary by
-architecture.
+In a typical CNN block, a nonlinear activation function (usually ReLU, acting as a detector stage) is applied immediately after the linear convolution operation, and the pooling operation is applied afterward to downsample the resulting activations.
 
-=== Architecture
+=== Architecture and Training
 
-In a CNN, we typically have:
-- *Input layer*: the input image or another spatially structured tensor.
-- *Convolutional layer*: kernels are applied to the input, producing feature
-  maps.
-- *Activation layer*: a nonlinear activation function, usually ReLU, is
-  applied to the feature maps.
-- *Pooling layer*: a pooling operation reduces the spatial dimensions.
+A typical CNN architecture is composed of a sequence of stages (or layers):
+- *Input layer*: receives the raw input, such as an image, a 1D biological sequence, or another spatially structured tensor.
+- *Convolutional layer* (convolution stage): applies a set of learnable kernels to the input to extract local features and produce feature maps (affine transformation).
+- *Activation layer* (detector stage): applies a nonlinear activation function, usually ReLU, element-wise to the feature maps.
+- *Pooling layer* (pooling stage): downsamples the feature maps to reduce spatial dimensions and provide invariance to small local shifts.
 
-Backpropagation, adapted to the convolution operation, computes the gradients
-of the loss with respect to the kernel weights. An optimization algorithm then
-uses these gradients to update the weights. Stochastic gradient descent (SGD)
-uses one training example per update, whereas *mini-batch gradient descent*
-uses a small batch. Mini-batch updates are usually more computationally
-efficient and stable than single-example updates; training continues for
-multiple iterations or epochs.
+During training, *backpropagation* (adapted to account for weight sharing and pooling operations) computes the gradients of the loss function with respect to the kernel weights. An optimization algorithm then updates the parameters:
+- Pure *Stochastic Gradient Descent (SGD)* computes the gradient and updates the weights using a single training example at a time.
+- *Mini-batch gradient descent* computes the gradient over a small subset (mini-batch) of training examples at each step. Mini-batch updates are computationally much more efficient and provide more stable gradient estimates than single-example updates, enabling fast training of large deep networks over multiple iterations or epochs.
 
 === Regularization
 
-These techniques are used to improve generalization and reduce overfitting.
-Examples include *dropout* and *weight decay*.
+Regularization techniques are employed to improve generalization on unseen data and reduce *overfitting*. Common strategies include *weight decay* ($L_1$ and $L_2$ norm regularization) and *dropout*:
+- *Weight decay* penalizes large parameter values by adding a regularization term (such as the $L_2$ norm or $L_1$ norm of the weights) to the loss function, encouraging simpler models.
+- *Dropout* randomly sets a fraction of neuron activations to zero during each training step. It is typically applied to hidden layers rather than the final output layer. At inference (test) time, dropout is disabled and the activations are scaled appropriately to account for the full network being active.
 
-Dropout randomly sets a fraction of the activations to zero during training.
-It is usually applied to hidden layers, not generally to the final output
-layer. At inference time, dropout is disabled and the activations are scaled
-according to the training convention.
-
-Dropout reduces the co-adaptation of neurons and can be interpreted as an
-approximate ensemble of subnetworks that share parameters. Weight decay
-instead penalizes large weights, typically by adding an L2 regularization term
-to the loss.
+Dropout prevents the *co-adaptation* of neurons (forcing units to learn robust features independently) and can be interpreted as training an approximate *ensemble of exponentially many subnetworks* that share parameters.
 
 = Prediction of Genetic Variants
 
-One important problem is the prediction and interpretation of SNPs (single
-nucleotide polymorphisms). SNPs are a common type of genetic variation. Many
-are located in non-coding regions, where they can affect gene regulation and
-gene expression.
+A major challenge in genomic medicine and computational biology is the prediction and functional interpretation of *SNPs (Single Nucleotide Polymorphisms)*. SNPs are the most common type of genetic variation among individuals. Notably, the vast majority of SNPs are located in *non-coding regions* of the genome, where they do not directly alter protein sequences but can affect gene regulation and gene expression.
 
-SNPs are usually biallelic, although other types of variants also exist. Across
-the human population, there are millions of known SNPs. A single individual
-typically carries several million variants relative to a reference genome;
-the exact number depends on the population and on the variant-calling
-procedure.
+SNPs are typically biallelic (having two possible alleles at a specific locus), although other types of structural and sequence variants also exist. Across the human population, tens of millions of SNPs have been catalogued. A single individual typically carries several million variants compared to a reference human genome; the exact count depends on the individual's ancestry and the variant-calling pipeline used.
 
-Some of the variability in the *phenotype* is due to genetic variation,
-including variation at SNPs, while other variability is due to environmental
-and other biological factors.
+Part of the variability observed in the *phenotype* across individuals is explained by genetic variation (including SNPs), while the remaining variability arises from environmental factors and gene-environment interactions.
 
 #note()[
-  Phenotype is the set of *observable characteristics* of an individual, and it is determined by the genotype and the environment. The genotype is the set of genes that an individual has, and it is determined by the DNA sequence. The environment is the set of external factors that can affect the phenotype, such as diet, lifestyle, and exposure to toxins.
+  The *phenotype* is the set of observable characteristics or traits of an individual (including morphology, physiological properties, and disease susceptibility), and it is determined by the interplay between the *genotype* and the *environment*. The *genotype* is the genetic makeup of an organism, encoded in its DNA sequence. The *environment* encompasses all external factors that can influence the phenotype, such as diet, lifestyle, and exposure to toxins or pathogens.
 ]
 
-Many diseases are associated with alterations in DNA. These alterations can be
-inherited or acquired. Inherited variants are present in the germline and can
-be passed from parents to offspring. Acquired variants arise in somatic cells
-and are generally not passed to offspring.
+Many human diseases are associated with alterations in the DNA sequence. These variants can be:
+- *Inherited (germline) variants*: present in germ cells (egg or sperm) and passed from parents to offspring, present in virtually all cells of the body.
+- *Acquired (somatic) variants*: arise spontaneously in somatic cells during an individual's lifetime (e.g., due to replication errors or environmental mutagens, as in cancer) and are not passed to offspring.
 
-It is important to:
-- *detect genetic variants*: projects such as the 1000 Genomes Project
-  catalogue genetic variation in human populations;
+In genomic medicine, three key objectives are to:
+- *Detect genetic variants*: large-scale sequencing initiatives, such as the *1000 Genomes Project*, catalogue genetic variation across diverse human populations.
+- *Predict their effects on the phenotype*: assessing the functional impact of variants helps uncover the genetic basis of complex traits and diseases, guiding the development of new therapies.
+- *Understand their role in disease*: when a variant is associated with a pathology, characterizing its underlying molecular mechanism allows researchers to identify potential therapeutic targets.
 
-- *predict their effects on the phenotype*: this helps us understand the
-  genetic basis of disease and develop new therapies;
+=== Variants in Coding and Non-Coding Regions
 
-- *understand their role in disease*: if a variant is associated with a
-  disease, we can investigate its molecular mechanism and identify possible
-  therapeutic targets.
+Genetic variants can occur in both coding and non-coding regions of the genome. While coding variants can directly alter the amino acid sequence of a protein, *regulatory elements* are predominantly located in non-coding regions and control when, where, and how much a gene is expressed. Consequently, a non-coding variant falling within a regulatory element can be pathogenic, though its exact impact depends heavily on the genomic context and cell type.
 
-=== Variants
+=== Regulatory Elements and Histone Modifications
 
-Variants can occur in both coding and non-coding regions of the genome.
-Regulatory elements are often located in non-coding regions and can affect gene
-expression. A variant in such an element can therefore be pathogenic, although
-its effect depends on its genomic context and biological consequences.
-
-=== Histone modification
-
-Promoters are regulatory regions near transcription start sites (TSSs) that
-help initiate transcription, whereas enhancers can increase transcription
-from a distance. A variant in a promoter can alter transcription; in an
-extreme case, little or no mRNA and protein may be produced.
-
-Histone modifications can change chromatin accessibility and thereby influence
-whether regulatory regions are available to the transcriptional machinery.
-
-Enhancers can be located far from the TSS and can regulate a gene through
-three-dimensional interactions with its promoter. A variant in an enhancer can
-alter this regulation.
-
-Silencers have the opposite effect of enhancers: they decrease transcription.
-A variant in a silencer can weaken this repression and consequently increase
-transcription.
-
-Insulators are regulatory regions that can block interactions between enhancers
-and promoters, thereby isolating a regulatory element from a gene. A variant
-in an insulator can disrupt this boundary and affect transcription.
+Gene transcription is tightly controlled by interactions between DNA regulatory elements and chromatin structure:
+- *Promoters*: regulatory regions located immediately upstream of *Transcription Start Sites (TSSs)* where the transcription machinery (including RNA polymerase and general transcription factors) assembles to initiate transcription. A variant in a promoter can disrupt transcription initiation; in extreme cases, little or no mRNA and protein are produced.
+- *Histone modifications*: chemical modifications to histone proteins (around which DNA is wrapped) alter *chromatin accessibility*, determining whether regulatory DNA regions are physically accessible to transcription factors and the transcriptional machinery.
+- *Enhancers*: distal regulatory elements that can be located far from the TSS (upstream, downstream, or within introns) and boost transcription rates by physically interacting with the promoter via three-dimensional chromatin looping. Variants within an enhancer can impair or alter this activation.
+- *Silencers*: regulatory elements that have the opposite effect of enhancers. They bind transcriptional repressors to decrease or silence gene transcription. A variant in a silencer can weaken this repression, potentially leading to an abnormal increase in transcription.
+- *Insulators*: boundary elements that block inappropriate interactions between enhancers and promoters of neighboring genes, isolating regulatory domains. A variant in an insulator can disrupt this boundary, causing aberrant gene activation or repression.
 
 #note()[
-  Insulators can also help prevent the spread of heterochromatin into
-  euchromatin. In heterochromatin, DNA is tightly packed and generally less
-  accessible for transcription. In euchromatin, DNA is more open and generally
-  more accessible for transcription.
+  Insulators also act as barriers that prevent the spread of *heterochromatin* into *euchromatin*:
+  - In *heterochromatin*, DNA is tightly packed around histones and is generally inaccessible for transcription (gene silencing).
+  - In *euchromatin*, DNA is more loosely packed and open, making it accessible to the transcriptional machinery for active gene expression.
 ]
 
-== Machine learning formulation
-- Input:
-  - a set of genetic variants (examples);
-  - a set of annotations associated with the variants (features);
-  - a set of labels associated with the variants (targets).
+=== Post-transcriptional Regulation
 
-The goal is to predict the effects of genetic variants on the phenotype and to
-understand their role in disease. This can be formulated as a classification
-or ranking task, often called *variant prioritization*.
+Regulation also occurs after DNA is transcribed into RNA. *Messenger RNA (mRNA)* can interact with RNA-binding proteins and *non-coding RNAs (ncRNAs)*, such as *microRNAs (miRNAs)*, which bind to specific target sites on the mRNA to regulate its stability, degradation, cellular localization, or translation efficiency into protein.
+
+== Machine Learning Formulation
+
+The problem of interpreting genetic variants can be framed as a supervised machine learning task:
+- *Input*:
+  - A set of genetic variants (training/testing *examples*).
+  - A set of genomic and epigenomic annotations or raw sequence contexts associated with each variant (*features*).
+  - A set of known functional or clinical outcomes associated with the variants (*labels / targets*).
+
+The goal is to predict the functional or phenotypic effects of unseen genetic variants and assess their potential role in disease. Depending on the setup, this is formulated as a binary/multi-class *classification* task or a *ranking* task, commonly referred to as *variant prioritization*.
 
 = DeepSEA
 
-DeepSEA is a deep neural network for predicting epigenetic features from DNA
-sequence and for estimating the effects of sequence variants.
+*DeepSEA* (Deep learning-based Sequence Analyzer) is a deep convolutional neural network designed to predict epigenetic and regulatory features directly from raw DNA sequences, and to estimate the functional effects of non-coding sequence variants (Zhou and Troyanskaya, *Nature Methods*, 2015).
 
-For variants in non-coding regions, the model can estimate changes in
-regulatory signals, such as transcription-factor binding and chromatin
-accessibility. These predictions can provide evidence about possible effects
-on phenotype, but they do not by themselves establish that a variant is
-pathogenic.
+For variants located in non-coding regions, DeepSEA estimates quantitative changes in regulatory signals—such as *transcription-factor (TF) binding*, *DNase I hypersensitivity* (chromatin accessibility), and *histone marks*—by comparing predictions for the reference sequence and the mutated (alternative) sequence. While these predictions provide strong functional evidence about how a variant perturbs regulatory activity, they do not by themselves prove clinical pathogenicity, which requires further biological and clinical integration.
 
-*Motif* is a short sequence pattern recognized by a DNA-binding protein, such
-as a transcription factor. A motif need not be located in a promoter; it can
-also occur in an enhancer or another regulatory region. Two possibilities are:
-- *gain of motif*: a variant creates or strengthens a motif that can be
-  recognized by a transcription factor, potentially changing transcription;
+=== Sequence Motifs
 
-- *loss of motif*: a variant disrupts or weakens a motif, potentially
-  changing transcription in the opposite direction.
+A *motif* is a short, recurring DNA sequence pattern that is specifically recognized and bound by a DNA-binding protein, such as a transcription factor. Motifs are not restricted to promoters; they frequently occur within enhancers, silencers, and other regulatory regions. When a genetic variant occurs within or near a regulatory region, two main mechanistic outcomes are possible:
+- *Gain of motif*: a variant creates a new binding site or strengthens an existing weak motif, increasing the binding affinity of a transcription factor and potentially altering transcription.
+- *Loss of motif*: a variant disrupts or weakens an existing motif, reducing or abolishing transcription factor binding and altering transcription in the opposite direction.
 
 #note()[
-  A mutation in a promoter can alter gene expression and can result in a gain
-  or loss of regulatory activity.
+  A single nucleotide mutation in a promoter or enhancer can significantly alter gene expression by causing either a gain or a loss of regulatory binding activity.
 ]
 
-The *sequence-logo representation* of a motif is a graphical representation of
-the nucleotide distribution at each position. The total height of a column
-represents its information content, while the relative height of each letter
-represents the frequency of that nucleotide at that position.
-=== Post-transcriptional regulation
+The *sequence logo* is a standard graphical representation of a sequence motif that illustrates the nucleotide conservation at each position:
+- The *total height* of a stack at a given position represents the *information content* (conservation) of that position, measured in bits.
+- The *relative height* of each letter (A, C, G, T) within a stack represents the observed *frequency* (or probability) of that specific nucleotide at that position.
 
-Messenger RNA (mRNA) can interact with non-coding RNAs (ncRNAs), such as
-microRNAs, which can affect mRNA stability, degradation, localization, or
-translation.
+== Goal of DeepSEA
 
-== Goal
+Given a DNA sequence window (e.g., $1000$ base pairs) centered on a specific genetic variant, thereby capturing both the variant and its surrounding genomic context, the goals are to:
+1. Accurately predict large-scale epigenetic profiles—specifically *transcription-factor binding*, *chromatin accessibility*, and *histone modifications*—across multiple human cell and tissue types directly from the DNA sequence.
+2. Predict the *functional effect of the variant* by evaluating the difference in predicted probabilities between the reference allele and the alternative allele.
 
-Given a DNA sequence centered on a specific variant, together with its
-surrounding context, we want to:
-
-- predict transcription-factor binding and histone modifications in multiple
-  cell and tissue types;
-- predict the functional effect of the variant.
-
-This is a supervised-learning problem and, when several regulatory features
-are predicted simultaneously, it is a multi-label classification problem.
+From a machine learning perspective, predicting the presence or absence of hundreds of regulatory features simultaneously from a DNA sequence is formulated as a *supervised multi-label classification problem* (where each output neuron predicts the probability of a specific epigenetic event in a specific cell type).
