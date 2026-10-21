@@ -382,23 +382,26 @@ After predicting epigenetic states, DeepSEA can be used to predict the functiona
 
 == The HyperSMURF Method
 
-*HyperSMURF* (*Hyper-ensemble of SMOTE Undersampled Random Forests*) is an imbalance-aware supervised ensemble method specifically designed to detect rare pathogenic variants in the non-coding genome. It extends the previously developed *ReMM* (*Regulatory Mendelian Mutation*).
+*HyperSMURF* (*Hyper-ensemble of SMOTE Undersampled Random Forests*) is an imbalance-aware supervised ensemble method specifically designed to detect rare pathogenic variants in the non-coding genome.
 
 HyperSMURF addresses extreme class imbalance by combining three core strategies:
 1. *Balancing training data through differential sampling*:
   - *Partitioning of the majority class*: the huge set of negative (neutral) examples $cal(N)$ is randomly partitioned into $n$ disjoint subsets $cal(N)_1, cal(N)_2, dots, cal(N)_n$.
   - *Oversampling of the minority class via SMOTE*: for each partition, the small set of positive (deleterious) examples $cal(P)$ is augmented by generating synthetic positive examples using *SMOTE (Synthetic Minority Oversampling Technique)*.
   - *Undersampling of the majority class*: each negative subset $cal(N)_i$ is randomly subsampled to match a target size proportional to the oversampled positives, yielding a balanced training set $cal(T)_i$ for each partition.
+
 2. *Data coverage improvement and variance reduction*:
   Unlike simple undersampling (which discards most negative examples and loses critical information about the neutral background), partitioning $cal(N)$ across $n$ learners ensures that a large fraction of the negative data is covered across the ensemble, while ensembling reduces model variance.
+
 3. *Hyper-ensembling (ensemble of ensembles)*:
   Each balanced dataset $cal(T)_i$ is used to train a *Random Forest (RF)*—which is itself an ensemble of decision trees. Combining $n$ distinct Random Forests forms a *hyper-ensemble*, enhancing both the accuracy and the diversity of the base learners.
 
-#note()[
-  *How SMOTE works*: given a minority-class example $x in cal(P)$, SMOTE finds its $k$ nearest neighbors within the minority class $cal(P)$. To generate a synthetic positive example, it randomly selects one of these $k$ nearest neighbors $x_"nn"$ and creates a new point via random linear interpolation along the line segment connecting $x$ and $x_"nn"$ in feature space:
+#note(title: "How SMOTE works")[
+  Given a *minority-class* example $x in cal(P)$, SMOTE finds its $k$ nearest neighbors within the minority class $cal(P)$. To generate a synthetic positive example, it randomly selects one of these $k$ nearest neighbors $x_"nn"$ and creates a new point via random linear interpolation along the line segment connecting $x$ and $x_"nn"$ in feature space:
   $
     x_"new" = x + lambda (x_"nn" - x), quad lambda in [0, 1]
   $
+  Given a positive $x$ mutation, SMOTE find the closest $k$ positive mutations in the feature space and generates a new synthetic mutation by randomly interpolating between $x$ and one of its $k$ neighbors.
 ]
 
 === Pseudocode of the HyperSMURF Algorithm
@@ -450,7 +453,7 @@ HyperSMURF was evaluated on two major genome-wide benchmarks for non-coding vari
 1. *Mendelian diseases dataset*:
   - *Positives*: $406$ manually curated non-coding regulatory SNV mutations known to cause Mendelian diseases.
   - *Negatives*: $\sim 14$ million neutral non-coding variants (derived from CADD-like human-chimpanzee ancestral genome comparisons).
-  - *Features ($26$ genomic attributes)*: downloaded from public databases (UCSC, ENCODE, NCBI), comprising evolutionary conservation scores, transcriptional and regulation features, GC content, epigenomic marks (histone modifications, DNase I accessibility), overlap with TFBSs/enhancers, and overlapping CNVs.
+  - *Features ($26$ genomic attributes)*: downloaded from public databases (UCSC, ENCODE, NCBI), comprising evolutionary conservation scores, transcriptional and regulation features, GC content, epigenomic marks (histone modifications, DNase I accessibility)
 
 2. *Complex diseases (GWAS) dataset*:
   - *Positives*: $2,115$ regulatory disease-associated SNVs from the NHGRI *GWAS Catalog*.
@@ -459,27 +462,21 @@ HyperSMURF was evaluated on two major genome-wide benchmarks for non-coding vari
 
 === Cytoband-Aware Cross-Validation and Performance
 
-To prevent *data leakage* caused by genomic proximity (variants located close to each other on the same chromosome share linkage disequilibrium, similar GC content, and overlapping epigenomic annotations), evaluation was performed using *10-fold cytoband-aware cross-validation*: all variants falling within the same chromosomal cytogenetic band are strictly kept within the same fold (never split between training and test sets).
+To prevent *data leakage* caused by genomic proximity (variants located close to each other on the same chromosome share linkage disequilibrium, similar GC content, and overlapping epigenomic annotations), evaluation was performed using *10-fold cytoband-aware cross-validation*: all variants falling within the same chromosomal cytogenetic band are strictly kept within the same fold (never split between training and test sets). In this way, the model is forced to generalize to unseen genomic regions rather than memorizing local patterns  from nearby variants.
 
-Because of the extreme class imbalance, methods were compared using *Precision-Recall curves* and the *Area Under the Precision-Recall Curve (AUPRC)* rather than AUROC:
-- *Mendelian diseases (AUPRC)*:
-  - *HyperSMURF*: $0.427$ (vastly outperforming all competitors).
-  - *GWAVA*: $0.156$ (the second best, as it also incorporates some class-balancing strategies).
-  - *CADD*: $0.093$.
-  - *DeepSEA*: $0.052$.
-  - *Eigen-PC / Eigen*: $0.044$ / $0.013$.
-- *Complex GWAS diseases (AUPRC)*:
-  - *HyperSMURF* (trained on DeepSEA's $1,842$ features): $0.635$.
-  - *GWAVA*: $0.402$.
-  - *DeepSEA* (using its native Boosted Logistic Regression classifier): $0.239$.
-  - *CADD*: $0.037$.
-  - *Eigen / Eigen-PC*: $0.004$.
 
-Furthermore, when evaluating Precision, Recall, and F-score across varying decision thresholds, and when testing AUPRC across increasing levels of artificial imbalance (from $1:1$ down to $1:1000$), HyperSMURF maintains high precision and graceful degradation, whereas imbalance-unaware methods like CADD collapse as the positive-to-negative ratio drops below $1:100$.
+#note()[
+  Because of the extreme class imbalance, methods were compared using *Precision-Recall curves* and the *Area Under the Precision-Recall Curve (AUPRC)* rather than AUROC.
+
+  The AUROC metric is misleading in this context because, under extreme imbalance, the False Positive Rate remains artificially small even when the absolute number of false positives is huge.
+
+  AUPRC (Area Under Precision curve) measures how well the model balances precision and recall across thresholds. In other words, it measures *how well the model is at catching true positives without having too many false positives*.
+]
+
 
 === Integration in the Genomiser Pipeline
 
-The *ReMM / HyperSMURF* pathogenicity score for non-coding variants is embedded in *Genomiser* (Smedley et al., *AJHG*, 2016), the state-of-the-art clinical pipeline for identifying causative mutations in whole-genome sequencing (WGS) data of patients with rare Mendelian diseases.
+The *ReMM / HyperSMURF* pathogenicity score for non-coding variants is embedded in *Genomiser*, the state-of-the-art clinical pipeline for identifying causative mutations in whole-genome sequencing (WGS) data of patients with rare Mendelian diseases.
 
 Genomiser combines two orthogonal sources of evidence:
 1. *Variant filtration and pathogenicity scoring*: starting from $\sim 4.2$ million variants in a patient's WGS, variants are filtered by quality, inheritance mode, and allele rarity in population databases (down to $\sim 30"k"$ rare variants). Coding variants are scored with tools like *PolyPhen*, while non-coding regulatory variants are scored using *ReMM / HyperSMURF*.
