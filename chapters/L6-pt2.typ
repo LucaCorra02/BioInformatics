@@ -372,18 +372,17 @@ After predicting epigenetic states, DeepSEA can be used to predict the functiona
 
 == The Class Imbalance Problem in Genomics
 
-Next-Generation Sequencing (NGS) enables the investigation of genetic variation across the entire human genome to detect mutations associated with both *Mendelian diseases* (rare, monogenic disorders such as Cystic Fibrosis or Huntington's disease) and *complex diseases* (polygenic disorders such as Alzheimer's, Parkinson's, or cancer). However, genome-wide prediction of deleterious non-coding variants faces two fundamental obstacles:
+*Next-Generation Sequencing* (NGS) enables the investigation of genetic variation across the entire human genome to detect mutations associated with both *Mendelian diseases* (rare, monogenic disorders such as Cystic Fibrosis or Huntington's disease) and *complex diseases* (polygenic disorders such as Alzheimer's, Parkinson's, or cancer). However, genome-wide prediction of deleterious non-coding variants faces two fundamental obstacles:
 1. The vast majority of genetic variation in the human genome is *physiological (neutral)*: deleterious or disease-associated variants represent a tiny minority immersed in a "sea of neutral variants".
-2. This creates a *massive class imbalance* between positive examples (pathogenic variants) and negative examples (neutral variants)—for instance, a ratio of approximately $1 : 36,000$ in non-coding Mendelian diseases (Smedley et al., 2016).
+2. This creates a *massive class imbalance* between positive examples (pathogenic variants) and negative examples (neutral variants)—for instance, a ratio of approximately $1 : 36,000$ in non-coding Mendelian diseases.
 
-#note()[
-  *Why classical ML algorithms fail*: standard machine learning algorithms aim to minimize overall classification error, which implicitly assumes balanced class distributions. When trained on highly imbalanced genomic data, they become heavily *biased toward the majority (neutral) class*, achieving high overall accuracy by simply predicting almost every variant as neutral while failing to detect the rare pathogenic variants.
-  Surprisingly, nearly all classical state-of-the-art variant prioritization methods—such as *CADD* (Kircher et al., 2014), *DeepSEA* (Zhou & Troyanskaya, 2015), *FATHMM-MKL* (Shihab et al., 2015), and *Eigen* (Ionita-Laza et al., 2016), with the partial exception of *GWAVA* (Ritchie et al., 2014)—do not adopt imbalance-aware learning strategies.
+#note(title: "Why classical ML algorithms fail")[
+  Standard machine learning algorithms aim to minimize overall classification error, which implicitly assumes *balanced class* distributions. When trained on highly imbalanced genomic data, they become heavily *biased toward the majority (neutral) class*, achieving high overall accuracy by simply predicting almost every variant as neutral while failing to detect the rare pathogenic variants.
 ]
 
 == The HyperSMURF Method
 
-*HyperSMURF* (*Hyper-ensemble of SMOTE Undersampled Random Forests*, Schubach, Re, Robinson, and Valentini, *Scientific Reports*, 2017) is an imbalance-aware supervised ensemble method specifically designed to detect rare pathogenic variants in the non-coding genome. It extends the previously developed *ReMM* (*Regulatory Mendelian Mutation*) score (Smedley et al., 2016).
+*HyperSMURF* (*Hyper-ensemble of SMOTE Undersampled Random Forests*) is an imbalance-aware supervised ensemble method specifically designed to detect rare pathogenic variants in the non-coding genome. It extends the previously developed *ReMM* (*Regulatory Mendelian Mutation*).
 
 HyperSMURF addresses extreme class imbalance by combining three core strategies:
 1. *Balancing training data through differential sampling*:
