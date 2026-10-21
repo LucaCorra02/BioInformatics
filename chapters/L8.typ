@@ -4,15 +4,20 @@
 
 == Clinical Outcome Prediction and Its Challenges
 
-*Clinical outcome prediction* is a fundamental problem in computational biology and precision medicine. It encompasses several critical tasks, such as predicting drug response, disease prognosis, clinical diagnosis, patient subtype stratification, and disease recurrence, with the ultimate goal of discovering biomarkers and unraveling the biomolecular machinery underlying diseases[cite: 221, 225].
+*Clinical outcome prediction* is a fundamental problem in computational biology and precision medicine. It encompasses several critical tasks, such as predicting drug response, disease prognosis, clinical diagnosis, patient subtype stratification, and disease recurrence, with the ultimate goal of discovering biomarkers and unraveling the biomolecular machinery underlying diseases.
 
-However, applying Machine Learning to clinical and multi-omics data presents severe challenges[cite: 222]:
-- *Small sample size*: the number of available patients (training examples) in clinical cohorts is typically very small[cite: 222, 294].
-- *High data dimensionality ("Curse of Dimensionality")*: omics profiles (e.g., gene expression, DNA methylation, somatic mutations) are represented as real-valued vectors in a very high-dimensional space where the number of features $d$ is much larger than the number of samples $n$ ($d >> n$), resulting in sparse data[cite: 222, 246, 294].
-- *Multi-modal data integration*: patient profiles often combine heterogeneous data sources (multi-omics, clinical records, medical imaging, laboratory tests, demographic data) that are difficult to fuse coherently[cite: 222, 234, 249].
-- *Missing data*: clinical datasets frequently suffer from missing values—either sporadic missing entries or *entirely missing views* (modalities) for a subset of patients (partial datasets)[cite: 222, 242, 243].
-- *Limited, noisy, and uncertain labels*: labeled patient data are scarce and prone to clinical uncertainty or noise. Moreover, targets are not limited to binary labels (e.g., healthy vs. diseased), but can also be multi-class categories or continuous variables (e.g., survival time)[cite: 222, 294].
-- *Interpretability*: clinical decisions require validation by human domain experts. Therefore, predictive models must be *interpretable* and *explainable*, allowing clinicians to understand *why* a specific prediction was made[cite: 222, 227, 294].
+However, applying Machine Learning to clinical and multi-omics data presents severe challenges:
+- *Small sample size*: the number of available patients (training examples) in clinical cohorts is typically very small.
+
+- *High data dimensionality*: omics profiles (e.g., gene expression, DNA methylation, somatic mutations) are represented as real-valued vectors in a very *high-dimensional space* where the number of features $d$ is much larger than the number of samples $n$ ($d >> n$), resulting in sparse data.
+
+- *Multi-modal data integration*: patient profiles often combine heterogeneous data sources (multi-omics, clinical records, medical imaging, laboratory tests, demographic data) that are difficult to fuse.
+
+- *Missing data*: clinical datasets frequently suffer from missing values—either sporadic missing entries or *entirely missing views* (modalities) for a subset of patients (partial datasets).
+
+- *Limited, noisy, and uncertain labels*: labeled patient data are scarce and prone to *clinical uncertainty* or noise. Moreover, targets are not limited to binary labels (e.g., healthy vs. diseased), but can also be multi-class categories or continuous variables (e.g., survival time).
+
+- *Interpretability*: clinical decisions require validation by human domain experts. Therefore, predictive models must be *interpretable* and *explainable*, allowing clinicians to understand *why* a specific prediction was made.
 
 == Inductive vs. Transductive Learning: The Network Medicine Perspective
 
@@ -31,16 +36,16 @@ In contrast, *Network Medicine* shifts the paradigm toward *transductive (semi-s
 In Systems Biology and Network Medicine, life and disease cannot be understood by characterizing single isolated components; instead, we must model the systemic interactions among components using graphs[cite: 127, 272]. Two complementary perspectives exist:
 
 1. *Biomolecular Networks* (e.g., *Protein-Protein Interaction (PPI) networks*, *Metabolic networks*, *Gene Regulatory networks*, *Gene Co-expression networks*, *Drug-Target networks*, *Disease-Gene networks*)[cite: 128, 130, 131, 132, 133, 276]:
-   - *Nodes*: biomolecules such as genes, proteins, enzymes, metabolites, or drugs[cite: 128, 198, 277].
-   - *Edges*: physical, biochemical, or functional interactions[cite: 198, 274]. For instance, in a PPI network, two proteins are linked if they physically bind to form a protein complex, if they are enzymes catalyzing two successive biochemical reactions in a metabolic pathway, or if one regulates the expression of the other[cite: 274]. Interaction data are gathered from curated literature, high-throughput experiments—such as *Yeast Two-Hybrid (Y2H)* and *Affinity Purification coupled with Mass Spectrometry (APMS)*—and databases like *STRING*, *DIP*, *BioGRID*, *MIPS*, *BIND*, *KEGG*, and *Reactome*[cite: 128, 129, 217, 287].
-   - *Main tasks*: *Automated Function Prediction (AFP)* (predicting Gene Ontology terms of unannotated proteins), *Disease-Gene Prioritization* (ranking candidate genes with respect to a disease), *Drug Repositioning* (finding new therapeutic uses for existing drugs), and identifying unknown protein complexes/pathways via clustering[cite: 195, 196, 214, 289].
+  - *Nodes*: biomolecules such as genes, proteins, enzymes, metabolites, or drugs[cite: 128, 198, 277].
+  - *Edges*: physical, biochemical, or functional interactions[cite: 198, 274]. For instance, in a PPI network, two proteins are linked if they physically bind to form a protein complex, if they are enzymes catalyzing two successive biochemical reactions in a metabolic pathway, or if one regulates the expression of the other[cite: 274]. Interaction data are gathered from curated literature, high-throughput experiments—such as *Yeast Two-Hybrid (Y2H)* and *Affinity Purification coupled with Mass Spectrometry (APMS)*—and databases like *STRING*, *DIP*, *BioGRID*, *MIPS*, *BIND*, *KEGG*, and *Reactome*[cite: 128, 129, 217, 287].
+  - *Main tasks*: *Automated Function Prediction (AFP)* (predicting Gene Ontology terms of unannotated proteins), *Disease-Gene Prioritization* (ranking candidate genes with respect to a disease), *Drug Repositioning* (finding new therapeutic uses for existing drugs), and identifying unknown protein complexes/pathways via clustering[cite: 195, 196, 214, 289].
 
 2. *Patient Similarity Networks (PSNs)*[cite: 225, 294]:
-   - *Nodes*: individual patients[cite: 225, 294].
-   - *Edges*: pairwise similarity scores between patients' biomolecular, clinical, or multi-omics profiles[cite: 225, 294].
-   - *Main tasks*:
-     - *Patient subtype stratification* (unsupervised clustering / community detection): partitioning patients affected by the same disease into distinct molecular or clinical subtypes[cite: 225, 226, 231, 294].
-     - *Clinical outcome / phenotype prediction* (semi-supervised node classification or ranking): predicting prognosis, therapy response, or survival for unlabeled patients[cite: 225, 226, 231].
+  - *Nodes*: individual patients[cite: 225, 294].
+  - *Edges*: pairwise similarity scores between patients' biomolecular, clinical, or multi-omics profiles[cite: 225, 294].
+  - *Main tasks*:
+    - *Patient subtype stratification* (unsupervised clustering / community detection): partitioning patients affected by the same disease into distinct molecular or clinical subtypes[cite: 225, 226, 231, 294].
+    - *Clinical outcome / phenotype prediction* (semi-supervised node classification or ranking): predicting prognosis, therapy response, or survival for unlabeled patients[cite: 225, 226, 231].
 
 == Semi-Supervised Learning on Graphs and the RANKS / P-Net Framework
 
@@ -67,9 +72,7 @@ Methods in computational biology fall into two broad categories[cite: 193, 199, 
 
   Mathematically, global semi-supervised learning algorithms minimize a *quadratic cost function*:
 
-  $C(hat(Y))$ that balances three terms[cite: 201, 268]:$
-    C(hat(Y)) = underbrace(||hat(Y)_l - Y_l||^2, "A: Consistency with initial labels") + mu underbrace(hat(Y)^T L hat(Y), "B: Smoothness over graph geometry") + mu epsilon underbrace(||hat(Y)||^2, "Regularization")
-  $
+  $C(hat(Y))$ that balances three terms[cite: 201, 268]:$ C(hat(Y)) = underbrace(||hat(Y)_l - Y_l||^2, "A: Consistency with initial labels") + mu underbrace(hat(Y)^T L hat(Y), "B: Smoothness over graph geometry") + mu epsilon underbrace(||hat(Y)||^2, "Regularization") $
   where $L = D - W$ is the unnormalized *graph Laplacian*[cite: 201, 204], and the smoothness term satisfies[cite: 201, 267]:
   $hat(Y)^T L hat(Y) = hat(Y)^T (D - W) hat(Y) = 1 / 2 sum_(i, j = 1)^n W_(i j) (hat(y)_i - hat(y)_j)^2$
   which penalizes connected nodes ($W_(i j) > 0$) that are assigned different predicted labels ($hat{y}_i != hat{y}_j$)[cite: 201, 267].
@@ -87,7 +90,7 @@ Let $phi: cal(X) -> cal(H)$ be a mapping from the input node space $cal(X)$ to a
 If we measure the squared Euclidean distance in feature space $cal(H)$ between node $i$ and the *centroid* of the positive class $V_C$, we get[cite: 205]:
 $
   D_"AV" (i, V_C) & = norm(phi(x_i) - 1 / (|V_C|) sum_(j in V_C) phi(x_j))^2 \
-                  & = ⟨phi(x_i), phi(x_i)⟩ - 2 / (|V_C|) sum_(j in V_C) ⟨phi(x_i), phi(x_j)⟩ + 1 / (|V_C|^2) sum_(k in V_C) sum_(j in V_C) ⟨phi(x_k), phi(x_j)⟩
+  & = ⟨phi(x_i), phi(x_i)⟩ - 2 / (|V_C|) sum_(j in V_C) ⟨phi(x_i), phi(x_j)⟩ + 1 / (|V_C|^2) sum_(k in V_C) sum_(j in V_C) ⟨phi(x_k), phi(x_j)⟩
 $
 Replacing inner products with the kernel $K$, flipping the sign to turn distance into similarity, and dropping the last term (which is constant with respect to $i$) yields the *Average Score*[cite: 205]:
 $
@@ -103,7 +106,7 @@ Assuming equal self-similarity $K(x_i, x_i)$ across nodes (or normalizing the ke
     S_"NN" (v, V_C) = max_(x in V_C) K(v, x)
   $
 - *$k$-Nearest-Neighbors Score ($S_"kNN"$)*: sums the kernel similarities over the positive nodes that belong to the $k$ nearest neighbors of $v$:
- $
+  $
     S_"kNN" (v, V_C) = sum_(x in "kNN"(v) inter V_C) K(v, x)
   $
 
@@ -112,16 +115,12 @@ Assuming equal self-similarity $K(x_i, x_i)$ across nodes (or normalizing the ke
 A particularly effective kernel for capturing graph topology is the *$q$-step Random Walk Kernel* (Smola and Kondor, 2003)[cite: 204, 294]:
 - Let $W$ be the symmetric similarity matrix and $D$ the diagonal degree matrix with $d_(i i) = sum_j w_(i j)$[cite: 204, 294].
 - The unnormalized graph Laplacian is $L = D - W$, and the *symmetric normalized graph Laplacian* is[cite: 204, 294]:
-  $
-    tilde(L) = D^(-1/2) L D^(-1/2) = D^(-1/2) (D - W) D^(-1/2) = I - D^(-1/2) W D^(-1/2)
-  $- The *1-step Random Walk Kernel* is defined as[cite: 204, 294]:
+  $ tilde(L) = D^(-1/2) L D^(-1/2) = D^(-1/2) (D - W) D^(-1/2) = I - D^(-1/2) W D^(-1/2) $- The *1-step Random Walk Kernel* is defined as[cite: 204, 294]:
   $
     K_"rw" = a I - tilde(L) = (a - 1) I + D^(-1/2) W D^(-1/2)
   $
   where $a >= 1$ (typically $a >= 2$ to ensure positive semi-definiteness) is a parameter that controls the relative weight of self-connections (staying at the current node) versus moving to neighboring nodes[cite: 204, 294].
-- The * $q$-step Random Walk Kernel* is obtained by raising the 1-step kernel to the power $q$[cite: 204]:$
-    K_"rw"^q = (a I - tilde(L))^q = ((a - 1) I + D^(-1/2) W D^(-1/2))^q
-  $
+- The * $q$-step Random Walk Kernel* is obtained by raising the 1-step kernel to the power $q$[cite: 204]:$ K_"rw"^q = (a I - tilde(L))^q = ((a - 1) I + D^(-1/2) W D^(-1/2))^q $
 
 #example()[
   *Intuitive interpretation of the Random Walk Kernel in RANKS*[cite: 206, 294]:
@@ -152,15 +151,15 @@ A particularly effective kernel for capturing graph topology is the *$q$-step Ra
 When multiple data modalities (e.g., DNA methylation, mRNA expression, protein abundance, clinical data) are available for the same set of patients (*multimodal / heterogeneous datasets*, working in a *parallel-vertical integration flow*), integrative PSN methods are classified into three main paradigms (Gliozzo et al., *Briefings in Bioinformatics*, 2022)[cite: 234, 235, 236]:
 
 1. *Input-data fusion (Early integration / concatenation-based methods)*[cite: 235, 237]:
-   - First, the separate data matrices are transformed or embedded into a *joint shared low-dimensional latent space* during pre-processing—using methods such as *JIVE / AJIVE* (PCA-based), *intNMF / iNMF* (Non-negative Matrix Factorization-based), or *MOFA+* (Generalized Matrix Factorization-based)[cite: 237, 248].
-   - Second, a *single PSN* is computed on the integrated latent representation and used for downstream unsupervised clustering or supervised classification[cite: 237].
+  - First, the separate data matrices are transformed or embedded into a *joint shared low-dimensional latent space* during pre-processing—using methods such as *JIVE / AJIVE* (PCA-based), *intNMF / iNMF* (Non-negative Matrix Factorization-based), or *MOFA+* (Generalized Matrix Factorization-based)[cite: 237, 248].
+  - Second, a *single PSN* is computed on the integrated latent representation and used for downstream unsupervised clustering or supervised classification[cite: 237].
 2. *Output-data integration (Late integration)*[cite: 235, 238]:
-   - First, an independent *unimodal PSN* is built for each data modality using a modality-specific similarity measure[cite: 238].
-   - Second, clustering or classification is performed separately on each unimodal PSN[cite: 238].
-   - Third, the individual predictions or clusterings are combined at the end via consensus aggregation or meta-models (e.g., *SUMO*, *PINSPlus*)[cite: 235, 238].
+  - First, an independent *unimodal PSN* is built for each data modality using a modality-specific similarity measure[cite: 238].
+  - Second, clustering or classification is performed separately on each unimodal PSN[cite: 238].
+  - Third, the individual predictions or clusterings are combined at the end via consensus aggregation or meta-models (e.g., *SUMO*, *PINSPlus*)[cite: 235, 238].
 3. *PSN-fusion (Intermediate / Model integration)*[cite: 235, 239]:
-   - First, a separate *unimodal PSN* is constructed for each data modality[cite: 239].
-   - Second, the unimodal networks are fused into a *single integrated PSN* via network-fusion algorithms—such as *SNF (Similarity Network Fusion)*, *NEMO*, *netDx*, or *MSNE*—prior to running downstream clustering or outcome prediction[cite: 239].
+  - First, a separate *unimodal PSN* is constructed for each data modality[cite: 239].
+  - Second, the unimodal networks are fused into a *single integrated PSN* via network-fusion algorithms—such as *SNF (Similarity Network Fusion)*, *NEMO*, *netDx*, or *MSNE*—prior to running downstream clustering or outcome prediction[cite: 239].
 
 === Similarity Network Fusion (SNF), MP-Net, and Miss-SNF
 
@@ -221,7 +220,10 @@ There are two main research lines in Graph Representation Learning[cite: 146, 14
       line((2.4, 2.5), (3.6, 2.5), mark: (end: ">", fill: black), stroke: 0.8pt)
 
       rect((3.6, 1.9), (6.8, 3.1), radius: 0.15, stroke: 1pt + purple, fill: purple.lighten(90%))
-      content((5.2, 2.5), align(center, text(size: 8.5pt, fill: purple.darken(20%))[*Graph Embedding* (e.g., `node2vec`)]))
+      content((5.2, 2.5), align(center, text(
+        size: 8.5pt,
+        fill: purple.darken(20%),
+      )[*Graph Embedding* (e.g., `node2vec`)]))
 
       line((6.8, 2.5), (8.0, 2.5), mark: (end: ">", fill: black), stroke: 0.8pt)
 
@@ -267,14 +269,14 @@ Word2Vec relies on the *distributional hypothesis*: words that appear in similar
 - In the *Skip-Gram model*, a shallow *one-hidden-layer neural network* is trained to predict the surrounding context words given a target input word[cite: 150, 153, 294]:
   1. *Input layer*: the $i$-th word in a vocabulary of size $n$ (e.g., $n = 10,000$ words) is represented as a *one-hot encoded column vector* $bold(x)_i in {0, 1}^n$, having a single $1$ at index $i$ and $0$ elsewhere[cite: 150, 151, 294].
   2. *Hidden (Embedding) layer*: the input vector is multiplied by a learnable *embedding weight matrix* $W in RR^(n times p)$, where $p$ (or $d$, e.g., $p = 300$) is the embedding dimension[cite: 150, 151, 294]. Because $bold(x)_i$ is one-hot encoded, the product
-     $
-       bold(z)_i^T = bold(x)_i^T W in RR^(1 times p)
-     $
-     simply selects the *$i$-th row of $W$*[cite: 151]. Thus, $W$ acts as a *lookup table* where row $i$ is the $p$-dimensional embedding $bold(z)_i$ of word $i$, and the hidden layer consists of $p$ linear neurons (no nonlinear activation function)[cite: 150, 151, 294].
+    $
+      bold(z)_i^T = bold(x)_i^T W in RR^(1 times p)
+    $
+    simply selects the *$i$-th row of $W$*[cite: 151]. Thus, $W$ acts as a *lookup table* where row $i$ is the $p$-dimensional embedding $bold(z)_i$ of word $i$, and the hidden layer consists of $p$ linear neurons (no nonlinear activation function)[cite: 150, 151, 294].
   3. *Output (Softmax) layer*: the hidden vector $bold(z)_i$ is multiplied by a second *context weight matrix* $U in RR^(p times n)$ (also denoted $W'$) to produce raw logits $bold(y) = U^T bold(z)_i in RR^n$[cite: 152, 153, 294]. A *softmax classifier* converts these scores into a probability distribution over all $n$ words in the vocabulary[cite: 150, 152, 294]:
-     $
-       P("word" j "in context" | "word" i) = "softmax"(y_j) = (exp(y_j)) / (sum_(k=1)^n exp(y_k)) = (exp(bold(z)_i^T bold(u)_j)) / (sum_(k=1)^n exp(bold(z)_i^T bold(u)_k))
-     $
+    $
+      P("word" j "in context" | "word" i) = "softmax"(y_j) = (exp(y_j)) / (sum_(k=1)^n exp(y_k)) = (exp(bold(z)_i^T bold(u)_j)) / (sum_(k=1)^n exp(bold(z)_i^T bold(u)_k))
+    $
 
 #note()[
   In Skip-Gram, the neural network prediction task is only a *proxy (pretext) task*: once training is complete, the output layer is discarded and the learned rows of the weight matrix $W$ are used as the Euclidean word embeddings[cite: 149, 151, 152, 294].
@@ -332,7 +334,7 @@ Word2Vec relies on the *distributional hypothesis*: words that appear in similar
       for idx in range(6) {
         let y = 0.5 + idx * 0.5
         rect((11.8, y), (13.0, y + 0.5), stroke: 0.7pt + black, fill: gray.lighten(92%))
-        content((12.4, y + 0.25), text(size: 7.5pt)[$y_(#{6 - idx})$])
+        content((12.4, y + 0.25), text(size: 7.5pt)[$y_(#{ 6 - idx })$])
       }
     })
   ]
@@ -368,18 +370,18 @@ $
 
 To make this optimization problem mathematically tractable, two fundamental assumptions are introduced[cite: 162, 163, 294]:
 1. *Conditional independence*: given the embedding $f(u)$ of the source node $u$, the probabilities of observing individual neighborhood nodes $n_i in N_S (u)$ factorize independently[cite: 162, 163, 294]:
-   $
-     Pr(N_S (u) | f(u)) = product_(n_i in N_S (u)) Pr(n_i | f(u))
-   $
+  $
+    Pr(N_S (u) | f(u)) = product_(n_i in N_S (u)) Pr(n_i | f(u))
+  $
 2. *Symmetry in feature space*: a source node and a neighborhood node have a symmetric effect on each other in the embedding space. Therefore, the conditional probability of every source-neighborhood pair $(u, n_i)$ is modeled as a *softmax* over the dot product of their embeddings[cite: 162, 163, 294]:
-   $
-     Pr(n_i | f(u)) = (exp(f(n_i) dot f(u))) / (sum_(v in V) exp(f(v) dot f(u)))
-   $
+  $
+    Pr(n_i | f(u)) = (exp(f(n_i) dot f(u))) / (sum_(v in V) exp(f(v) dot f(u)))
+  $
 
 Substituting both assumptions into the objective function yields[cite: 163, 294]:
 $
   max_f sum_(u in V) log product_(n_i in N_S (u)) Pr(n_i | f(u)) & = max_f sum_(u in V) sum_(n_i in N_S (u)) log (exp(f(n_i) dot f(u))) / (sum_(v in V) exp(f(v) dot f(u))) \
-                                                                   & = max_f sum_(u in V) [ -|N_S (u)| log Z_u + sum_(n_i in N_S (u)) f(n_i) dot f(u) ]
+  & = max_f sum_(u in V) [ -|N_S (u)| log Z_u + sum_(n_i in N_S (u)) f(n_i) dot f(u) ]
 $
 (often written compactly per neighborhood scaling as $max_f sum_(u in V) [ -log Z_u + sum_(n_i in N_S (u)) f(n_i) dot f(u) ]$)[cite: 163, 294], where
 $
@@ -400,10 +402,10 @@ The first strategy to sample $N_S (u)$ is *DeepWalk* (Perozzi et al., *ACM SIGKD
   1. Initialize $Phi$ by sampling uniformly from $cal(U)^(|V| times d)$[cite: 165].
   2. Build a binary tree $T$ from $V$ (for Hierarchical Softmax)[cite: 165].
   3. *for* $i = 1$ *to* $gamma$ *do*[cite: 165]:
-     - $cal(O) = "Shuffle"(V)$[cite: 165]
-     - *for each* $v_i in cal(O)$ *do*[cite: 165]:
-       - $cal(W)_(v_i) = "RandomWalk"(G, v_i, t)$[cite: 165]
-       - $"SkipGram"(Phi, cal(W)_(v_i), w)$[cite: 165]
+    - $cal(O) = "Shuffle"(V)$[cite: 165]
+    - *for each* $v_i in cal(O)$ *do*[cite: 165]:
+      - $cal(W)_(v_i) = "RandomWalk"(G, v_i, t)$[cite: 165]
+      - $"SkipGram"(Phi, cal(W)_(v_i), w)$[cite: 165]
 ]
 
 #note()[
@@ -542,37 +544,37 @@ $
 where the bias factor $gamma_(p, q, s, e)$ is defined by checking whether the edge type changes ($psi(r, v) == psi(v, x)$) and whether the node type changes ($phi(x) == phi(v)$), combined with the shortest-path topological distance $d_(r, x) in {0, 1, 2}$[cite: 184, 186]:
 
 1. *Same edge type ($psi(r, v) = psi(v, x)$) and same node type ($phi(x) = phi(v)$)*[cite: 186]:
-   $
-     gamma = cases(
-       1 / p & "if " d_(r, x) = 0,
-       1 & "if " d_(r, x) = 1,
-       1 / q & "if " d_(r, x) = 2,
-     )
-   $
+  $
+    gamma = cases(
+      1 / p & "if " d_(r, x) = 0,
+      1 & "if " d_(r, x) = 1,
+      1 / q & "if " d_(r, x) = 2,
+    )
+  $
 2. *Same edge type ($psi(r, v) = psi(v, x)$) and different node type ($phi(x) != phi(v)$)* (penalized by $1/s$)[cite: 182, 186]:
-   $
-     gamma = cases(
-       1 / (p s) & "if " d_(r, x) = 0,
-       1 / s & "if " d_(r, x) = 1,
-       1 / (q s) & "if " d_(r, x) = 2,
-     )
-   $
+  $
+    gamma = cases(
+      1 / (p s) & "if " d_(r, x) = 0,
+      1 / s & "if " d_(r, x) = 1,
+      1 / (q s) & "if " d_(r, x) = 2,
+    )
+  $
 3. *Different edge type ($psi(r, v) != psi(v, x)$) and same node type ($phi(x) = phi(v)$)* (penalized by $1/e$)[cite: 183, 186]:
-   $
-     gamma = cases(
-       1 / (p e) & "if " d_(r, x) = 0,
-       1 / e & "if " d_(r, x) = 1,
-       1 / (q e) & "if " d_(r, x) = 2,
-     )
-   $
+  $
+    gamma = cases(
+      1 / (p e) & "if " d_(r, x) = 0,
+      1 / e & "if " d_(r, x) = 1,
+      1 / (q e) & "if " d_(r, x) = 2,
+    )
+  $
 4. *Different edge type ($psi(r, v) != psi(v, x)$) and different node type ($phi(x) != phi(v)$)* (penalized by $1/(s e)$)[cite: 184, 186]:
-   $
-     gamma = cases(
-       1 / (p s e) & "if " d_(r, x) = 0,
-       1 / (s e) & "if " d_(r, x) = 1,
-       1 / (q s e) & "if " d_(r, x) = 2,
-     )
-   $
+  $
+    gamma = cases(
+      1 / (p s e) & "if " d_(r, x) = 0,
+      1 / (s e) & "if " d_(r, x) = 1,
+      1 / (q s e) & "if " d_(r, x) = 2,
+    )
+  $
 
 #note()[
   *Attention Mechanism Interpretation*[cite: 181, 185, 187]:
