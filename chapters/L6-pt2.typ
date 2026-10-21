@@ -120,7 +120,7 @@ Depending on the clinical or research goal, the task is cast either as a *dichot
 
 = DeepSEA
 
-*DeepSEA* (*Deep learning-based Sequence Analyzer*, Zhou and Troyanskaya, *Nature Methods*, 2015) is a deep convolutional neural network framework that learns a regulatory sequence code directly from large-scale chromatin-profiling data, enabling *de novo* prediction of the epigenetic effects of non-coding sequence alterations with single-nucleotide sensitivity.
+*DeepSEA* (*Deep learning-based Sequence Analyzer*, Zhou and Troyanskaya, *Nature Methods*, 2015) is a deep convolutional neural network (CNN) framework that learns a regulatory sequence code directly from large-scale chromatin-profiling data, enabling *de novo* prediction of the epigenetic effects of non-coding sequence alterations with single-nucleotide sensitivity.
 
 == Problem Setup and Goals
 
@@ -149,10 +149,7 @@ Given a genetic variant and its surrounding genomic sequence context, DeepSEA ad
 To predict epigenomic states from sequence alone, the classifier must learn the binding preferences of DNA-binding proteins both locally (*sequence motifs*) and at a broader spatial scale (*cis-regulatory modules*, where multiple TFs bind cooperatively).
 
 #note()[
-  A *motif* is a short, *recurring DNA sequence* pattern recognized by a transcription factor. When a single-nucleotide variant occurs within a promoter or enhancer, two main mechanistic outcomes can occur:
-  - *Gain of motif*: the mutation creates a new binding site or strengthens an existing weak motif (e.g., mutating $"CGGAGG" -> "CGGAAG"$ to match a TF recognition sequence), allowing a TF to bind and potentially activating or increasing transcription.
-
-  - *Loss of motif*: the mutation disrupts a conserved position within an existing motif (e.g., mutating $"TATTTAT" -> "TATCTAT"$), abolishing or weakening TF binding and repressing transcription.
+  We can visually represent the DNA as a sequence of nucleotides (A, C, G, T). Each cell has some transcription factor (TF) proteins that can alter the expression of a gene by binding to specific DNA sequences. This specific binding sequence is called a *motif*. Think of motifs as "locks" in the DNA, and TFs as "keys" that can fit into these locks. When a mutation occurs in the DNA, it can either create a new lock (*gain of motif*) or break an existing one (*loss of motif*), which can turn genes on or off inappropriately.
 ]
 
 
@@ -192,9 +189,12 @@ An epigenomic sequence classifier requires three essential properties:
 
 === From Naive Dense Layers to Convolutional and Pooling Layers
 
-Suppose we want a first hidden layer to scan an input DNA sequence of length $L$ (represented as a $4 times L$ matrix) to detect motifs of width $s$ (e.g., $s = 6$):
+Suppose we want a first hidden layer to scan an input DNA sequence of length $L$ (represented as a $4 times L$ matrix) to *detect motifs of width $s$* (e.g., $s = 6$):
+
 - A single hidden node $h_(1,1)$ connected to the first $s$ positions of the sequence (plus a bias term) can learn weights that fire (via a ReLU activation) when "motif 1" appears at starting position $1$.
-- Since a motif of width $s$ can start at any of the $W = L - s + 1$ valid positions along the sequence, and we want to detect $D$ distinct motifs (where $D$ is the hidden layer depth), afirst hidden layer contains $D times W$ hidden nodes:
+
+- Since a motif of width $s$ can start at any of the $W = L
+  - s + 1$ valid positions along the sequence, and we want to detect *$D$ distinct motifs* (where $D$ is the hidden layer depth), afirst hidden layer contains $D times W$ hidden nodes:
   $
     mat(
       delim: "[",
@@ -204,12 +204,131 @@ Suppose we want a first hidden layer to scan an input DNA sequence of length $L$
       h_(D,1), h_(D,2), dots, h_(D,W);
     )_(D times W)
   $
-- *Problem with unshared weights*: if every node $h_(d, j)$ had its own independent weight vector, the layer would have an enormous number of parameters and would be forced to re-learn the exact same motif independently at every starting position $j in {1, dots, W}$.
-- *Convolutional layer solution*: by enforcing *parameter sharing* across each row $d in {1, dots, D}$, all $W$ nodes in row $d$ share the exact same $4 times s$ weight kernel. Thus, each kernel slides across the $4 times L$ input matrix to detect the *same motif* at any starting position, producing a $D times W$ feature map while drastically reducing the number of parameters.
 
-To account for wider sequence context and *cis-regulatory modules*:
-- *Pooling layer*: applied on top of the convolutional layer. It takes the *maximum activation* over non-overlapping windows of $4$ adjacent hidden nodes along the spatial dimension, reducing the output representation from $D times W$ to $D times (W / 4)$. Biologically, this means the pooled unit fires if the motif is detected *anywhere* within that $4 {"-bp"}$ local window, providing local translation invariance and summarizing patterns at a higher spatial scale.
-- *Subsequent convolutional layers*: a second convolutional layer with $D'$ kernels of width $s'$ is stacked on top of the pooled $D times (W / 4)$ matrix. Each new kernel spans across all $D$ channels from the previous layer, learning higher-order combinations of motifs (with new spatial width $W' = (W / 4) - s' + 1$).
+#note()[
+  In this way, we are using a *fully connected dense layer* to scan the input sequence for $D$ distinct motifs at all $W$ possible starting positions.
+]
+
+*$mr("Problem with unshared weights")$*: if every node $h_(d, j)$ had its own independent weight vector, the layer would have an enormous number of parameters and would be forced to re-learn the exact same motif independently at every starting position $j in {1, dots, W}$.
+
+We can use the *convolutional layer solution*: by enforcing *parameter sharing* across each *row* $d in {1, dots, D}$, all $W$ nodes in row $d$ share the exact same $4 times s$ weight kernel. Thus, each kernel slides across the $4 times L$ input matrix to detect the *same motif* at any starting position, producing a $D times W$ feature map while drastically reducing the number of parameters.
+
+#note()[
+  The kernel is a small matrix of weights ($4 times s$). Each kernel represents a *single motif detector*, and the same kernel is applied across the entire input sequence. After the training process, the learned weights in the kernel can be interpreted as a *position weight matrix (PWM)* for the corresponding motif. When the motif is present in the input sequence, the convolution operation produces a high activation in the corresponding feature map, indicating that the motif has been detected at that position
+]
+
+
+
+#figure(
+  caption: [ kernell has a $s=3$ dimension $[w_1, w_2, w_3]$ and it remain the same for the entire input sequence. The activation of $h_(1,1)$ is the result of appling the weights on the first three bases(ACG)],
+)[
+  #align(center)[
+    #cetz.canvas(length: 1cm, {
+      import cetz.draw: *
+
+      // --- Input DNA Sequence ---
+      let seq = ("A", "C", "G", "T", "A", "C")
+      let start-x = 0
+      let y-in = 0
+
+      content((start-x - 1.2, y-in + 0.4), anchor: "east", text(size: 10pt)[*Sequenza\ Input*])
+
+      for (i, base) in seq.enumerate() {
+        rect((start-x + i, y-in), (start-x + i + 0.8, y-in + 0.8), stroke: 1pt + black)
+        content((start-x + i + 0.4, y-in + 0.4), text(weight: "bold", size: 12pt)[#base])
+      }
+
+      // --- Shared Weights Annotations ---
+      // Highlight Window 1 (Solid Teal)
+      let pad = 0.1
+      rect(
+        (start-x - pad, y-in - pad),
+        (start-x + 2.8 + pad, y-in + 0.8 + pad),
+        stroke: (paint: teal, thickness: 1.5pt),
+        radius: 0.1,
+      )
+
+      // Weights from Window 1 to h1
+      line((start-x + 0.4, y-in + 0.8 + pad), (start-x + 1.4, 2.5), stroke: (paint: teal, thickness: 1.2pt))
+      line((start-x + 1.4, y-in + 0.8 + pad), (start-x + 1.4, 2.5), stroke: (paint: teal, thickness: 1.2pt))
+      line((start-x + 2.4, y-in + 0.8 + pad), (start-x + 1.4, 2.5), stroke: (paint: teal, thickness: 1.2pt))
+
+      // Weight labels for h1
+      content((start-x + 0.65, 1.8), text(fill: teal.darken(20%), size: 10pt)[$w_1$])
+      content((start-x + 1.2, 1.8), text(fill: teal.darken(20%), size: 10pt)[$w_2$])
+      content((start-x + 2.1, 1.8), text(fill: teal.darken(20%), size: 10pt)[$w_3$])
+
+      // Highlight Window 2 (Dashed Orange)
+      let pad2 = 0.2
+      rect(
+        (start-x + 1 - pad2, y-in - pad2),
+        (start-x + 3.8 + pad2, y-in + 0.8 + pad2),
+        stroke: (paint: orange, thickness: 1.5pt, dash: "dashed"),
+        radius: 0.1,
+      )
+
+      // Weights from Window 2 to h2
+      line((start-x + 1.4, y-in + 0.8 + pad2), (start-x + 2.4, 2.5), stroke: (
+        paint: orange,
+        thickness: 1.2pt,
+        dash: "dashed",
+      ))
+      line((start-x + 2.4, y-in + 0.8 + pad2), (start-x + 2.4, 2.5), stroke: (
+        paint: orange,
+        thickness: 1.2pt,
+        dash: "dashed",
+      ))
+      line((start-x + 3.4, y-in + 0.8 + pad2), (start-x + 2.4, 2.5), stroke: (
+        paint: orange,
+        thickness: 1.2pt,
+        dash: "dashed",
+      ))
+
+      // Weight labels for h2
+      content((start-x + 1.65, 1.3), text(fill: orange.darken(20%), size: 10pt)[$w_1$])
+      content((start-x + 2.2, 1.3), text(fill: orange.darken(20%), size: 10pt)[$w_2$])
+      content((start-x + 3.15, 1.3), text(fill: orange.darken(20%), size: 10pt)[$w_3$])
+
+      // --- Hidden Layer Nodes ---
+      let y-out = 2.9
+      content((start-x - 1.2, y-out), anchor: "east", text(size: 10pt)[*Feature\ Map*])
+
+      circle((start-x + 1.4, y-out), radius: 0.4, stroke: 1.5pt + teal, fill: teal.lighten(80%))
+      content((start-x + 1.4, y-out), [$h_(1,1)$])
+
+      circle((start-x + 2.4, y-out), radius: 0.4, stroke: 1.5pt + orange, fill: orange.lighten(80%))
+      content((start-x + 2.4, y-out), [$h_(1,2)$])
+
+      circle((start-x + 3.4, y-out), radius: 0.4, stroke: 1pt + black, fill: gray.lighten(90%))
+      content((start-x + 3.4, y-out), [$h_(1,3)$])
+
+      content((start-x + 4.5, y-out), [$dots$])
+
+      // Add explanation arrow for sliding
+      bezier(
+        (start-x + 1.4, y-in - 0.4),
+        (start-x + 2.4, y-in - 0.4),
+        (start-x + 1.9, y-in - 0.8),
+        stroke: (thickness: 1.2pt, paint: gray),
+        mark: (end: ">", fill: gray),
+      )
+      content((start-x + 1.9, y-in - 1.1), text(
+        size: 9pt,
+        fill: gray.darken(30%),
+        weight: "bold",
+      )[Kernel goes on])
+    })
+  ]
+]
+
+To detect *multiple distinct motifs simultaneously* and account for wider sequence context (such as *cis-regulatory modules*), the architecture employs multiple kernels and successive layers:
+
+- *Multiple Kernels (Depth $D$)*: A single convolutional layer applies *$D$ different kernels in parallel*. Since each kernel is specialized to recognize one specific motif, this produces a *feature map* of depth $D$ (size $D times W$). This allows the network to search for $D$ distinct biological motifs simultaneously across the entire DNA sequence.
+
+- *Pooling layer*: applied on top of the convolutional layer. It takes the *maximum activation* (result of $h_(i,j)$), over non-overlapping windows (e.g., $4$ adjacent positions) along the spatial dimension, independently for each of the $D$ channels. This reduces the spatial representation from $D times W$ to $D times (W / 4)$. Biologically, this means the pooled unit fires if its specific motif is detected *anywhere* within that $4$-bp local window, providing local translation invariance and summarizing patterns at a higher spatial scale.
+
+- *Subsequent convolutional layers*: a second convolutional layer with $D'$ new kernels of width $s'$ is stacked on top of the pooled $D times (W / 4)$ matrix. Crucially, each new kernel spans across *all* $D$ channels from the previous layer. This enables the network to learn *higher-order combinations of different motifs* (e.g., detecting if Motif 1 and Motif 5 appear close to each other), which biologically correspond to *cis-regulatory modules*. The new spatial width of this layer will be $W' = (W / 4) - s' + 1$.
+
 
 === Full DeepSEA Hierarchy
 
@@ -221,19 +340,12 @@ The complete DeepSEA network stacks three convolutional-pooling blocks followed 
 5. *Fully connected layer* (with ReLU activations): integrates high-level spatial features across the entire sequence window.
 6. *Multitask output layer*: a sigmoid output layer with *$919$ units* that simultaneously predicts the probability of each epigenetic feature.
 
-=== Epigenetic Prediction Performance
-
-When evaluated on held-out test chromosomes using the median Area Under the ROC Curve (*AUC-ROC*), DeepSEA achieves high accuracy across all three categories of epigenetic marks:
-- *Transcription factors*: median $"AUC-ROC" = 0.958$.
-- *DNase I-hypersensitive sites*: median $"AUC-ROC" = 0.923$.
-- *Histone marks*: median $"AUC-ROC" = 0.856$ (slightly harder to predict because histone modifications span broader, less sharply defined sequence motifs than TF binding sites).
-
 == Predicting Functional Variants with DeepSEA
 
-Beyond predicting epigenetic states, DeepSEA is used to prioritize functional non-coding variants (SNPs, indels) annotated in *GWAS* and *eQTL* databases. This is achieved through a *two-step pipeline*:
+After predicting epigenetic states, DeepSEA can be used to predict the functional impact of non-coding variants. This is achieved through a *two-step pipeline*:
 
 1. *Chromatin effect extraction via DeepSEA*:
-  For a given variant, two $1000 {"-bp"}$ sequences centered on the variant are constructed—one carrying the *reference allele* and one carrying the *alternative (mutated) allele*. Both sequences are fed into the trained DeepSEA network to obtain two vectors of $919$ predicted probabilities: $P("reference")$ and $P("alternative")$. From these, two sets of chromatin perturbation features are computed for each of the $919$ epigenetic classes:
+  For a given DNA variant, *two* $1000 "bp"$ sequences centered on the variant are constructed—one carrying the *reference allele* and one carrying the *alternative (mutated) allele*. Both sequences are fed into the trained DeepSEA network to obtain two vectors of $919$ predicted probabilities: $P("reference")$ and $P("alternative")$. From these, two sets of chromatin perturbation features are computed for each of the $919$ epigenetic classes:
   - *Absolute difference features* ($919$ features):
     $
       |P("reference") - P("alternative")|
@@ -244,15 +356,15 @@ Beyond predicting epigenetic states, DeepSEA is used to prioritize functional no
     $
 
 2. *Variant pathogenicity classification via Boosted Logistic Regression*:
-  The $919$ absolute differences and $919$ relative differences ($1838$ epigenetic features in total) are concatenated with *$4$ evolutionary conservation scores* (*PhastCons*, *PhyloP*, and *GERP++* neutral evolution and rejected substitution scores). The resulting *$1842$ features* are standardized and fed into a *Boosted Logistic Regression classifier* (trained on known regulatory GWAS/eQTL variants and pathogenic variants vs. neutral controls) to output the final probability that the variant is functional/pathogenic.
+  The $919$ absolute differences and $919$ relative differences ($1838$ epigenetic features in total) are concatenated with *$4$ evolutionary conservation scores* (resilient mutation are very important). The resulting *$1842$ features* are standardized and fed into a *Boosted Logistic Regression classifier* to output the final probability that the variant is functional/pathogenic.
 
 === Summary: Strengths and Limitations of DeepSEA
 
-- *Strengths*:
+- *$mg("Strengths")$*:
   - Predicts *de novo* how unseen sequence variants (SNPs, insertions, deletions) perturb regulatory elements with single-nucleotide resolution.
   - Naturally accounts for the surrounding sequence context of motifs.
   - Exploits *parameter sharing* via convolutional layers and *multitask learning* across $919$ outputs to improve hidden-layer representations.
-- *Limitations*:
+- *$mr("Limitations")$*:
   - *Cannot generalize to unseen cell or tissue types*: since the $919$ output classes are fixed during training, the model cannot predict epigenetic states for a cell type not included in the training set.
   - *AUC-ROC is misleading for genome-wide evaluation*: across the whole genome, true epigenetic peaks (positive examples) and true pathogenic variants are vastly outnumbered by negative background regions. Under severe class imbalance, the False Positive Rate remains artificially small even when the absolute number of false positives is huge, making *Precision-Recall curves (AUPRC)* a much more reliable evaluation metric than AUC-ROC.
 
