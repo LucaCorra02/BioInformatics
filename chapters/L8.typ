@@ -19,64 +19,247 @@ However, applying Machine Learning to clinical and multi-omics data presents sev
 
 - *Interpretability*: clinical decisions require validation by human domain experts. Therefore, predictive models must be *interpretable* and *explainable*, allowing clinicians to understand *why* a specific prediction was made.
 
-== Inductive vs. Transductive Learning: The Network Medicine Perspective
+== Inductive vs. Transductive Learning
 
-Classical Machine Learning approaches (such as Support Vector Machines, Neural Networks, Decision Trees, and Random Forests) follow an *inductive* paradigm: they take training data as input, learn a general predictive model, and apply it to unseen test instances without explicitly modeling the mutual relationships among patients[cite: 223, 227, 294].
+Classical Machine Learning approaches (such as Support Vector Machines, Neural Networks, Decision Trees, and Random Forests) follow an *inductive* paradigm: they take training data as input, learn a general predictive model, and apply it to unseen test instances without explicitly modeling the mutual relationships among patients.
 
-In contrast, *Network Medicine* shifts the paradigm toward *transductive (semi-supervised) graph-based learning* by modeling data as a network—specifically, a *Patient Similarity Network (PSN)*, where each *node* represents a patient and each *edge* encodes the pairwise biomolecular or clinical similarity between two patients[cite: 225, 227, 294].
+In contrast, *Network Medicine* shifts the paradigm toward *transductive (semi-supervised)* graph-based learning by modeling *data as a network—specifically*, a *Patient Similarity Network (PSN)*, where each *node* represents a patient and each *edge* encodes the pairwise biomolecular or clinical similarity between two patients.
 
 #note()[
-  *Inductive vs. Transductive Learning*[cite: 227, 294]:
-  - *Inductive supervised models*: learn a general mapping function (a predictive model) from labeled training biomarkers and use it to predict the outcome of new, unseen samples independently. They do not explicitly account for relationships among individuals and are often not inherently explainable ("black-box" models)[cite: 223, 227, 294].
-  - *Transductive semi-supervised (PSN-based) models*: do not necessarily output a standalone general function; instead, they leverage both labeled and unlabeled nodes jointly within the same graph to directly predict the labels of the unlabeled patients[cite: 198, 227, 294]. Because predictions rely on the topological neighborhood of similar patients, PSNs are *inherently explainable* and can be inspected visually by clinicians using network visualization tools[cite: 227, 228, 294].
+  *Inductive vs. Transductive Learning*:
+  - *Inductive supervised models*: learn a general mapping function (a predictive model) from labeled training biomarkers and use it to predict the outcome of new, unseen samples independently. They do not explicitly account for relationships among individuals and are often *not inherently explainable* ("black-box" models).
+
+  - *Transductive semi-supervised (PSN-based) models*: do not necessarily output a standalone general function; instead, they leverage both labeled and unlabeled nodes jointly within the same graph to directly predict the labels of the unlabeled patients. Because predictions rely on the *topological neighborhood of similar patients*, PSNs are *inherently explainable* and can be inspected visually by using network visualization tools.
 ]
 
 === Biomolecular Networks vs. Patient Similarity Networks
 
-In Systems Biology and Network Medicine, life and disease cannot be understood by characterizing single isolated components; instead, we must model the systemic interactions among components using graphs[cite: 127, 272]. Two complementary perspectives exist:
+In Systems Biology and Network Medicine, life and disease cannot be understood by characterizing single isolated components; instead, we must model the systemic interactions among components using graphs. Two complementary perspectives exist:
 
-1. *Biomolecular Networks* (e.g., *Protein-Protein Interaction (PPI) networks*, *Metabolic networks*, *Gene Regulatory networks*, *Gene Co-expression networks*, *Drug-Target networks*, *Disease-Gene networks*)[cite: 128, 130, 131, 132, 133, 276]:
-  - *Nodes*: biomolecules such as genes, proteins, enzymes, metabolites, or drugs[cite: 128, 198, 277].
-  - *Edges*: physical, biochemical, or functional interactions[cite: 198, 274]. For instance, in a PPI network, two proteins are linked if they physically bind to form a protein complex, if they are enzymes catalyzing two successive biochemical reactions in a metabolic pathway, or if one regulates the expression of the other[cite: 274]. Interaction data are gathered from curated literature, high-throughput experiments—such as *Yeast Two-Hybrid (Y2H)* and *Affinity Purification coupled with Mass Spectrometry (APMS)*—and databases like *STRING*, *DIP*, *BioGRID*, *MIPS*, *BIND*, *KEGG*, and *Reactome*[cite: 128, 129, 217, 287].
-  - *Main tasks*: *Automated Function Prediction (AFP)* (predicting Gene Ontology terms of unannotated proteins), *Disease-Gene Prioritization* (ranking candidate genes with respect to a disease), *Drug Repositioning* (finding new therapeutic uses for existing drugs), and identifying unknown protein complexes/pathways via clustering[cite: 195, 196, 214, 289].
+1. *Biomolecular Networks* (e.g., *Protein-Protein Interaction (PPI) networks*, *Metabolic networks*):
+  - *Nodes*: biomolecules such as genes, proteins, enzymes, metabolites, or drugs.
+  - *Edges*: physical, biochemical, or functional interactions. For instance, in a PPI network, two proteins are linked if they physically bind to form a protein complex
+  - *Main tasks*: *Automated Function Prediction (AFP)* (predicting Gene Ontology terms of unannotated proteins), *Disease-Gene Prioritization* (ranking candidate genes with respect to a disease), *Drug Repositioning* (finding new therapeutic uses for existing drugs), and identifying unknown protein complexes/pathways via clustering.
 
-2. *Patient Similarity Networks (PSNs)*[cite: 225, 294]:
-  - *Nodes*: individual patients[cite: 225, 294].
-  - *Edges*: pairwise similarity scores between patients' biomolecular, clinical, or multi-omics profiles[cite: 225, 294].
+2. *Patient Similarity Networks (PSNs)*:
+  - *Nodes*: individual patients.
+  - *Edges*: pairwise similarity scores between patients' biomolecular, clinical, or multi-omics profiles.
   - *Main tasks*:
-    - *Patient subtype stratification* (unsupervised clustering / community detection): partitioning patients affected by the same disease into distinct molecular or clinical subtypes[cite: 225, 226, 231, 294].
-    - *Clinical outcome / phenotype prediction* (semi-supervised node classification or ranking): predicting prognosis, therapy response, or survival for unlabeled patients[cite: 225, 226, 231].
+    - *Patient subtype stratification* (unsupervised clustering / community detection): partitioning patients affected by the same disease into distinct molecular or clinical subtypes.
+    - *Clinical outcome / phenotype prediction* (semi-supervised node classification or ranking): predicting prognosis, therapy response, or survival for unlabeled patients.
 
 == Semi-Supervised Learning on Graphs and the RANKS / P-Net Framework
 
-=== Graph Semi-Supervised Learning (GSSL) Formulation
+Given a weighted undirected graph $G = (mb(V), mr(E), mg(W))$:
+- $mb(V)$: the set of nodes (e.g., proteins, genes, drugs, or patients), partitioned into a subset of *labeled nodes* $S$ (further containing positive _seed_ nodes $V_C subset S$ belonging to a target class $C$) and a subset of *unlabeled nodes* $U$, such that $V = S union U$.
+- $mr(E)$: the set of edges representing functional *relationships* or similarities.
+- $mg(W)$: the symmetric *similarity (or affinity) matrix*, where $w_(i j)$ quantifies the similarity between node $i$ and node $j$.
 
-Given a weighted undirected graph $G = (V, E, W)$[cite: 198, 205]:
-- $V$: the set of nodes (e.g., proteins, genes, drugs, or patients), partitioned into a subset of *labeled nodes* $S$ (further containing positive "seed" nodes $V_C subset S$ belonging to a target class $C$) and a subset of *unlabeled nodes* $U$, such that $V = S union U$[cite: 198, 203, 206].
-- $E$: the set of edges representing functional relationships or similarities[cite: 198].
-- $W$: the /*$vert{}V vert{} times \vert{}V\vert{}$*/ symmetric *similarity (or affinity) matrix*, where $w_(i j)$ quantifies the similarity between node $i$ and node $j$[cite: 198, 263].
+The goal of GSSL is either to assign discrete class labels to the unlabeled nodes $U$ (*node labeling / classification problem*) or to rank the nodes in $V$ according to their *likelihood* of belonging to the target class $C$ (*node ranking / prioritization problem*).
 
-The goal of GSSL is either to assign discrete class labels to the unlabeled nodes $U$ (*node labeling / classification problem*) or to rank the nodes in $V$ according to their likelihood of belonging to the target class $C$ (*node ranking / prioritization problem*)[cite: 198].
+Methods in computational biology fall into two categories:
+1. *Local learning strategies*: rely strictly on the immediate (1-hop) neighborhood of a node. The classic example is the *Guilt-By-Association (GBA)* principle, which infers a node's label directly from the labels of its direct neighbors. This method are fast, but they fail to capture the global topology of the graph.
 
-Methods in computational biology fall into two broad categories[cite: 193, 199, 200, 201]:
-1. *Local learning strategies*: rely strictly on the immediate (1-hop) neighborhood of a node[cite: 200]. The classic example is the *Guilt-By-Association (GBA)* principle (Marcotte et al., 1999; Oliver et al., 2000), which infers a node's label directly from the labels of its direct neighbors[cite: 199, 200]. While fast, local methods fail to capture the global topology of the graph.
-2. *Global learning strategies*: propagate label information across the *entire network topology*[cite: 201]. Examples include *Random Walks (RW)*, *Random Walk with Restart (RWR)*, *Label Propagation*, *Label Spreading*, Hopfield networks, and Gaussian Random Fields[cite: 199, 260, 261, 263, 264].
+2. *Global learning strategies*: propagate label information across the *entire network topology*. Examples include *Random Walks (RW)*, *Random Walk with Restart (RWR)*, ecc..
+
+=== Random Walks, Random Walk with Restart, and Label Propagation
+
+Given a graph starting point, we proceed to explore the graph by moving to a neighboring node at each step. The (random) sequence of visited nodes is called a *random walk* (RW).
 
 #note()[
-  *Global Label Propagation Algorithms and Quadratic Cost Minimization*[cite: 201, 260, 261, 263, 264, 269]:
-
-  - *Random Walk (RW)* and *Random Walk with Restart (RWR)*: a random walk is a memoryless *Markov chain* over the graph's nodes governed by the row-normalized transition matrix $Q = D^(-1) W$, where $D$ is the diagonal degree matrix with $d_(i i) = sum_j w_(i j)$[cite: 259, 260]. Given an initial probability vector $p^0$ (where $p_i^0 = 1 / |V_C|$ if $i in V_C$ and $0$ otherwise), a standard RW updates probabilities via $p^t = Q^T p^(t-1)$[cite: 260]. *RWR* adds a restart probability $theta in (0, 1)$ that allows the walker to jump back to the seed nodes $V_C$ at each step, preventing the walk from drifting too far from the known positives[cite: 261]:
-    $p^t = (1 - theta) Q^T p^(t-1) + theta p^0$
-  - *Label Propagation* (Zhu & Ghahramani, 2002): iteratively updates node label estimates via $hat(Y)^((t+1)) <- D^(-1) W hat(Y)^((t))$, while clamping (forcing) the labels of the labeled nodes at every step ($hat(Y)_l^((t+1)) <- Y_l$)[cite: 263].
-  - *Label Spreading* (Zhou et al., 2004): uses the symmetric normalized weight matrix $cal(L) = D^(-1/2) W D^(-1/2)$ and iterates $hat(Y)^((t+1)) <- alpha cal(L) hat(Y)^((t)) + (1 - alpha) hat(Y)^((0))$ with $alpha in [0, 1)$[cite: 264]. Unlike Label Propagation, it does *not* hard-clamp the initial labels, making it more robust to noisy labels[cite: 264].
-
-  Mathematically, global semi-supervised learning algorithms minimize a *quadratic cost function*:
-
-  $C(hat(Y))$ that balances three terms[cite: 201, 268]:$ C(hat(Y)) = underbrace(||hat(Y)_l - Y_l||^2, "A: Consistency with initial labels") + mu underbrace(hat(Y)^T L hat(Y), "B: Smoothness over graph geometry") + mu epsilon underbrace(||hat(Y)||^2, "Regularization") $
-  where $L = D - W$ is the unnormalized *graph Laplacian*[cite: 201, 204], and the smoothness term satisfies[cite: 201, 267]:
-  $hat(Y)^T L hat(Y) = hat(Y)^T (D - W) hat(Y) = 1 / 2 sum_(i, j = 1)^n W_(i j) (hat(y)_i - hat(y)_j)^2$
-  which penalizes connected nodes ($W_(i j) > 0$) that are assigned different predicted labels ($hat{y}_i != hat{y}_j$)[cite: 201, 267].
+  We can see a random walk as a *Markov chain* over the graph's nodes, where the next node to visit depends only on the current node and not on the history of previously visited nodes
 ]
+
+The algorithm is based on a set of matricies:
+- *$W$ (Adjacency or Similarity Matrix)*: a square matrix where the element $w_(i j)$ represents the _weight_ or strength of the connection between node $i$ and node $j$. If there is no connection, $w_(i j) = 0$.
+- *$D$ (Degree Matrix)*: a diagonal matrix where each diagonal element $d_(i i)$ is the sum of all the weights of the edges connected to node $i$ (i.e., the sum of row $i$ of the matrix $W$):
+  $
+    d_(i i) = sum_j w_(i j)
+  $
+
+- *$Q$ (Transition Matrix)*: defined as:
+  $
+    Q = D^(-1) W
+  $
+  This matrix transforms absolute weights into *transition probabilities*. The element $q_(i j)$ indicates the probability that a _random walker_, currently at node $i$, will move to node $j$. Since the rows are divided by the degree of the node, the sum of each row of $Q$ is exactly $1$.
+
+  ==== Random Walk with Restart (RWR)
+
+  Suppose this task: Given a graph with is adjacency matrix $W$ and a set of seed nodes $V_C$ belonging to a target class $C$, we want to rank all nodes in the graph according to their likelihood of belonging to class $C$.
+
+  First, we define an initial probability vector $p^0$ such that:
+  $
+    p_i^0 = cases(
+      1 / (|V_C|) "if" v in V_C,
+      0 "otherwise"
+    )
+  $
+  Then, we iteratively update the probability vector using this algorithm:
+
+  #pseudocode(
+    [$Q = D^(-1) W$  _transition matrix_],
+    [$t = 0$],
+    [*repeat*],
+    indent(
+      [$t = t +1$],
+      [$p^t = (1 - theta) Q^T p^(t-1) + theta p^0$],
+    ),
+    [*until* convergence $||p^t - p^(t-1)|| < epsilon$],
+    [*for each* $i in V$],
+    indent(
+      [$p_i^t = p_i^t / (sum_j p_j^t)$ _new wieghts normalized to sum to 1_],
+    ),
+    [*return* the probability vector $p^t$],
+  )
+  #note()[
+    The random walk with restart, use a *restart probability* $theta in (0, 1)$ that allows the walker to jump back to the seed nodes $V_C$ at each step, preventing the walk from drifting too far from the known positives.
+  ]
+
+=== Label Propagation and Label Spreading
+
+The goal of these algorithms is the same as RWR: to propagate label information from the labeled nodes $S$ to the unlabeled nodes $U$ across the graph topology.
+
+#note()[
+  They use different propagation rules:
+  - *RWR* use a idea of "movement" of a random walker: the walkers move according to the transition probabilities. The node labels are updated based on the probability of being visited by the random walker.
+
+  - Label Propagation and Label Spreading use a idea of *"diffusion" of information*: the labels are diffused across the graph according to the similarity weights. The node labels are updated based on the weighted average of their neighbors' labels.
+]
+
+The example dataset are divided into two set $hat(Y) = (hat(Y_l), hat(Y_u))$: $hat(Y_l)$ are the labels of the labeled nodes $S$ and $hat(Y_u)$ are the labels of the unlabeled nodes $U$. The algorithms iteratively update the labels of the unlabeled nodes based on the labels of their neighbors, until convergence. The main difference between the two algorithms is how they handle the labeled nodes:
+
+- *Label Propagation*: iteratively updates node label estimates via
+  $
+    hat(Y)^((t+1)) <- D^(-1) W hat(Y)^((t)) \
+    hat(Y)_l^((t+1)) <- Y_l
+  $
+  the degree-matrix is use to divide the weightes of the neighbors (prediction labels value) of each node, so it is a *weighted average* of the neighbors' labels.
+
+  #note()[
+    This algorithm performs a *hard-clamping* of the labeled nodes, meaning that the labels of the labeled nodes are fixed and do not change during the propagation process. This can be problematic if the initial labels are noisy or incorrect, as it can propagate errors throughout the graph.
+  ]
+
+- *Label Spreading*: uses the symmetric normalized weight matrix (so that the propagation is symmetric):
+  $
+    cal(L) = D^(-1/2) W D^(-1/2)
+  $
+  it iterate until convergence, by updating the labels of the unlabeled nodes based on the labels of their neighbors, and the labels of the labeled nodes are also updated:
+  $ hat(Y)^((t+1)) <- alpha cal(L) hat(Y)^((t)) + (1 - alpha) hat(Y)^((0)) $ with $alpha in [0, 1)$. This parameter controls the importance of the initial labels versus the propagated labels. The initial labels are weighted by $(1 - alpha)$, while the propagated labels are weighted by $alpha$.
+
+  #note()[
+    Unlike Label Propagation, it does *not* hard-clamp the initial labels, making it more robust to noisy labels.
+  ]
+
+  #example(title: "Label Propagation")[
+    #figure(
+      caption: [Evoluzione temporale della Label Propagation su un grafo a 5 nodi.],
+    )[
+      #align(center)[
+        #cetz.canvas(length: 0.8cm, {
+          import cetz.draw: *
+
+          // Funzione di supporto per disegnare il grafo in un certo stato
+          let draw-graph(offset-y, title, color1, color2, color3, color4, color5, note-text) = {
+            group({
+              // Titolo dello step
+              content((3, offset-y + 2.5), text(weight: "bold", size: 12pt)[#title])
+
+              // Coordinate dei nodi
+              let n1 = (0, offset-y + 1)
+              let n2 = (2, offset-y + 1.8)
+              let n3 = (2, offset-y + 0.2)
+              let n4 = (4, offset-y + 1)
+              let n5 = (6, offset-y + 1)
+
+              // Archi
+              line(n1, n2, stroke: 1.5pt + gray)
+              line(n1, n3, stroke: 1.5pt + gray)
+              line(n2, n4, stroke: 1.5pt + gray)
+              line(n3, n4, stroke: 1.5pt + gray)
+              line(n4, n5, stroke: 1.5pt + gray)
+
+              // Nodi
+              circle(n1, radius: 0.4, fill: color1, stroke: 1.5pt + black)
+              content(n1, text(weight: "bold")[S1]) // Seed 1 (Positivo)
+
+              circle(n2, radius: 0.4, fill: color2, stroke: 1.5pt + black)
+              content(n2, [U1])
+
+              circle(n3, radius: 0.4, fill: color3, stroke: 1.5pt + black)
+              content(n3, [U2])
+
+              circle(n4, radius: 0.4, fill: color4, stroke: 1.5pt + black)
+              content(n4, [U3])
+
+              circle(n5, radius: 0.4, fill: color5, stroke: 1.5pt + black)
+              content(n5, text(weight: "bold")[S2]) // Seed 2 (Negativo)
+
+              // Nota a lato
+              content((12, offset-y + 1), align(left, text(size: 9pt, style: "italic")[#note-text]))
+            })
+          }
+
+          // Colori base
+          let c-pos = red
+          let c-neg = blue
+          let c-unk = white
+
+          // STEP 0: Inizializzazione
+          draw-graph(
+            8,
+            "Step 0: Inizializzazione (t = 0)",
+            c-pos,
+            c-unk,
+            c-unk,
+            c-unk,
+            c-neg,
+            "I nodi S1 (+1, rosso) e S2 (-1, blu)\nhanno etichette note.\nI nodi U1, U2, U3 partono da 0 (bianco).",
+          )
+
+          // STEP 1: Prima propagazione
+          // U1 è collegato a S1 e U3. Riceve (1 + 0)/2 = +0.5
+          // U2 è collegato a S1 e U3. Riceve (1 + 0)/2 = +0.5
+          // U3 è collegato a U1, U2 e S2. Riceve (0 + 0 - 1)/3 = -0.33
+          draw-graph(
+            4,
+            "Step 1: Prima Diffusione e Hard Clamping (t = 1)",
+            c-pos,
+            c-pos.lighten(50%),
+            c-pos.lighten(50%),
+            c-neg.lighten(66%),
+            c-neg,
+            "L'inchiostro fluisce:\nU1 e U2 si tingono di rosso.\nU3 riceve il blu da S2.\nS1 e S2 vengono forzati (Clamped)\na rimanere puri.",
+          )
+
+          // STEP INF: Convergenza
+          draw-graph(
+            0,
+            "Step ∞: Convergenza (Stato Stazionario)",
+            c-pos,
+            c-pos.lighten(30%),
+            c-pos.lighten(30%),
+            c-neg.lighten(30%),
+            c-neg,
+            "Il sistema si stabilizza.\nU1 e U2 sono classificati come Rossi.\nU3, pur ricevendo un po' di rosso,\nè dominato dal blu (vicinanza a S2).",
+          )
+        })
+      ]
+    ]
+  ]
+
+=== Global Semi-Supervised Learning cost function
+
+All this semi-supervised learning algorithms try to minimize a *quadratic cost function* $C(hat(Y))$ that balances three terms:
+$
+  C(hat(Y)) = underbrace(||hat(Y)_l - Y_l||^2, "A: Consistency with initial labels") + mu underbrace(hat(Y)^T L hat(Y), "B: Smoothness over graph geometry") + mu epsilon underbrace(||hat(Y)||^2, "Regularization")
+$
+where: 
+- $mr("Term" A)$: ensures that the predicted labels of the labeled nodes $hat(Y)_l$ remain close to their initial labels $Y_l$. If the algorithm predicts $0$ for a labeled node that is actually positive, this term will incur a high cost.
+- $mb("Term" B)$: The $L$ represents the graph Laplacian, which encodes the graph's topology. This term encourages *smoothness* in the predicted labels across the graph, meaning that connected nodes (with high similarity) should have similar predicted labels. If two connected nodes are assigned very different labels, this term will incur a high cost:
+  $
+    1/2 sum_(i, j = 1)^n W_(i j) (hat(y)_i - hat(y)_j)^2
+  $
+  if the two nodes are connected ($W_(i j) > 0$) and have different predicted labels ($hat(y)_i != hat(y)_j$), this term will be large, penalizing the algorithm for assigning dissimilar labels to similar nodes.
 
 === Kernelized Score Functions (RANKS)
 
