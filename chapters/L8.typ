@@ -489,27 +489,45 @@ When *multiple data modalities* (e.g., DNA methylation, mRNA expression, protein
   - First, a separate *unimodal PSN* is constructed for each data modality.
   - Second, the unimodal networks are fused into a *single integrated PSN* via network-fusion algorithms—such as *SNF (Similarity Network Fusion)*, *NEMO*, *netDx*, or *MSNE*—prior to running downstream clustering or outcome prediction.
 
-=== Similarity Network Fusion (SNF), MP-Net, and Miss-SNF
+=== Similarity Network Fusion (SNF)
 
-- *SNF (Similarity Network Fusion, Wang et al., Nature Methods, 2014)*[cite: 240]:
-  For each data view $v$, SNF builds a patient similarity matrix $W^((v))(i, j) = exp(- rho(x_i, x_j)^2 / (mu epsilon_(i j)))$ and derives two normalized matrices[cite: 240]:
-  1. A *global normalized similarity matrix* $P^((v))$ capturing similarities across all patients (with $P(i, i) = 1/2$, and $P(i, j) = W(i, j) / (2 sum_(k != i) W(i, k))$ for $j != i$)[cite: 240].
-  2. A *local normalized similarity matrix* $S^((v))$ restricted only to the $k$-nearest neighbors $N_i$ of each patient ($S(i, j) = W(i, j) / (sum_(k in N_i) W(i, k))$ if $j in N_i$, and $0$ otherwise)[cite: 240].
-  SNF then iteratively updates the global matrices through a non-linear *message-passing (diffusion) process* between views[cite: 240]:
+For each data view $v$, SNF builds a patient similarity matrix:
+$ W^((v))(i, j) = exp(- rho(x_i, x_j)^2 / (mu epsilon_(i j))) $
+and derives two normalized matrices:
+1. A *global normalized similarity matrix* $P^((v))$ capturing *similarities across all patients*:
   $
-    P_(t+1)^((1)) = S^((1)) times P_t^((2)) times (S^((1)))^T, quad P_(t+1)^((2)) = S^((2)) times P_t^((1)) times (S^((2)))^T
+    P(i, i) = 1/2, "and" P(i, j) = W(i, j) / (2 sum_(k != i) W(i, k)) "for" j != i
   $
-  At each iteration, two patients $i$ and $j$ become more similar in view $1$ if their local neighbors $k in N_i$ and $l in N_j$ in view $1$ are strongly connected in view $2$[cite: 240]. Weak edges unsupported across views disappear, while edges supported by all or single strong views are reinforced[cite: 240].
-- *MP-Net*: extends *P-Net* to multi-omics data by using *SNF* as an integration module to fuse unimodal similarity matrices ($W_1, W_2, dots$) into an integrated similarity matrix $W$, followed by Random Walk kernelization, P-Net filtering, and kernelized node scoring[cite: 241, 249].
-- *Handling Missing Data and Miss-SNF* (Gliozzo et al., *Bioinformatics*, 2025)[cite: 242, 244, 245]:
-  - If only *sporadic feature values* are missing, standard imputation methods like *KNN* (for multi-omics) or *missForest* (for mixed data types) can be used[cite: 242].
-  - However, in clinical practice it is common to have *partial datasets* where an entire omics modality (view) is completely missing for a subset of patients[cite: 242, 243, 244]. *Miss-SNF* modifies the SNF message-passing process (via variants such as *miss-SNF zero*, *miss-SNF one*, and *miss-SNF equidistant*) to partially reconstruct the missing pairwise similarities in an unmeasured view by propagating local and global topological information from the other available views[cite: 244, 245].
+2. A *local normalized similarity matrix* $S^((v))$ restricted only to the *$k$-nearest* neighbors $N_i$ of each patient:
+  $ S(i, j) = W(i, j) / (sum_(k in N_i) W(i, k)) "if" j in N_i , "and" 0 "otherwise" $
+SNF then iteratively updates the global matrices through a non-linear *message-passing (diffusion) process* between views:
+$
+  P_(t+1)^((1)) = S^((1)) times P_t^((2)) times (S^((1)))^T, quad P_(t+1)^((2)) = S^((2)) times P_t^((1)) times (S^((2)))^T
+$
+At each iteration, two patients $i$ and $j$ become more similar in view $1$ if their local neighbors $k in N_i$ and $l in N_j$ in view $1$ are strongly connected in view $2$. Weak edges unsupported across views disappear, while edges supported by all or single strong views are reinforced.
+
+=== MP-Net and Handling Missing Data
+
+*MP-Net* extends *P-Net* to multi-omics data by using *SNF* as an integration module to fuse unimodal similarity matrices ($W_1, W_2, dots$) into an integrated similarity matrix $W$, followed by Random Walk kernelization, P-Net filtering, and kernelized node scoring.
+
+
+
+
+*Handling Missing Data and Miss-SNF*:
+- If only *sporadic feature values* are missing, standard imputation methods like *KNN* (for multi-omics) or *missForest* (for mixed data types) can be used.
+
+- However, in clinical practice it is common to have *partial datasets* where an entire omics modality (view) is completely missing for a subset of patients. *Miss-SNF* modifies the SNF message-passing process (via variants such as *miss-SNF zero*, *miss-SNF one*, and *miss-SNF equidistant*) to partially reconstruct the missing pairwise similarities in an unmeasured view by propagating local and global topological information from the other available views.
 
 === Addressing Small Sample Size via Intrinsic Dimensionality (ID)
 
-To combat the *curse of dimensionality* ($d >> n$) without arbitrarily discarding informative biological signals, dimensionality reduction (via unsupervised *Feature Selection (FS)*, *Feature Extraction (FE)* such as RPCA, Laplacian Eigenmaps, UMAP, t-SNE, or *FS + FE*) can be guided by estimating the *Intrinsic Dimensionality (ID)* of each omics view (Gliozzo et al., *Artificial Intelligence in Medicine*, 2025)[cite: 246, 247, 248]:
-- Informally, the *Intrinsic Dimensionality ($"id"$)* is the minimum dimension of the latent manifold onto which the data can be smoothly projected without information loss (analogous to points lying on a 2D sheet of paper embedded in a 3D space, where $"id" = 2$)[cite: 247].
-- Using block-analysis and the *two-NN ID estimator* ($hat(d)_"twonn"$), one can detect whether a view contains redundant/noisy features (indicated by a plateau in the ID curve) and automatically set the target reduced dimension $d$ before applying multi-omics data fusion (Concat, MOFA+, SNF, uMKL)[cite: 248].
+To combat the *curse of dimensionality* ($d >> n$) without arbitrarily discarding informative biological signals, dimensionality reduction (via unsupervised *Feature Selection (FS)*, *Feature Extraction (FE)* such as RPCA, Laplacian Eigenmaps, UMAP, t-SNE) can be guided by estimating the *Intrinsic Dimensionality (ID)* of each omics view.
+
+#informally()[
+  The *Intrinsic Dimensionality ($"id"$)* is the minimum dimension of the latent manifold onto which the data can be smoothly projected without information loss (analogous to points lying on a 2D sheet of paper embedded in a 3D space, where $"id" = 2$)
+
+]
+
+Using block-analysis and the *two-NN ID estimator* ($hat(d)_"twonn"$), one can detect whether a view contains redundant/noisy features (indicated by a plateau in the ID curve) and automatically set the target reduced dimension $d$ before applying multi-omics data fusion (Concat, MOFA+, SNF, uMKL).
 
 = Graph Representation Learning (GRL)
 
