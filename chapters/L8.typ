@@ -62,6 +62,7 @@ Methods in computational biology fall into two categories:
 
 2. *Global learning strategies*: propagate label information across the *entire network topology*. Examples include *Random Walks (RW)*, *Random Walk with Restart (RWR)*, ecc..
 
+
 === Random Walks, Random Walk with Restart, and Label Propagation
 
 Given a graph starting point, we proceed to explore the graph by moving to a neighboring node at each step. The (random) sequence of visited nodes is called a *random walk* (RW).
@@ -253,7 +254,7 @@ All this semi-supervised learning algorithms try to minimize a *quadratic cost f
 $
   C(hat(Y)) = underbrace(||hat(Y)_l - Y_l||^2, "A: Consistency with initial labels") + mu underbrace(hat(Y)^T L hat(Y), "B: Smoothness over graph geometry") + mu epsilon underbrace(||hat(Y)||^2, "Regularization")
 $
-where: 
+where:
 - $mr("Term" A)$: ensures that the predicted labels of the labeled nodes $hat(Y)_l$ remain close to their initial labels $Y_l$. If the algorithm predicts $0$ for a labeled node that is actually positive, this term will incur a high cost.
 - $mb("Term" B)$: The $L$ represents the graph Laplacian, which encodes the graph's topology. This term encourages *smoothness* in the predicted labels across the graph, meaning that connected nodes (with high similarity) should have similar predicted labels. If two connected nodes are assigned very different labels, this term will incur a high cost:
   $
@@ -261,26 +262,170 @@ where:
   $
   if the two nodes are connected ($W_(i j) > 0$) and have different predicted labels ($hat(y)_i != hat(y)_j$), this term will be large, penalizing the algorithm for assigning dissimilar labels to similar nodes.
 
-=== Kernelized Score Functions (RANKS)
+== Kernelized Score Functions (RANKS)
 
-*RANKS* (*RAnking of Nodes with Kernelized Score Functions*, Valentini et al., *Bioinformatics*, 2016) is a modular algorithmic framework that unifies *global* and *local* learning strategies[cite: 191, 192, 203, 218]:
-1. *Global learning via a Graph Kernel ($K$)*: a kernel matrix $K$ is computed over the graph to capture global topological relationships (multi-step paths) between all pairs of nodes[cite: 203, 205].
-2. *Local learning via a Score Function ($S$)*: a local scoring rule aggregates the kernel similarities between a target node $v$ and the known positive seed nodes $V_C$[cite: 203].
+*RANKS* (*RAnking of Nodes with Kernelized Score Functions*) is a modular algorithmic framework that unifies *global* and *local* learning strategies:
+1. *Global learning via a Graph Kernel ($K$)*: a kernel matrix $K$ is computed over the graph to capture global topological relationships (multi-step paths) between all pairs of nodes.
+2. *Local learning via a Score Function ($S$)*: a local scoring rule aggregates the kernel similarities between a target node $v$ and the known positive seed nodes $V_C$.
 
-==== Mathematical Derivation of Kernelized Score Functions
+The main target is to *rank an unlabeled node* $v$ according to its likelihood of belonging to the positive class $C$ based on its *topological proximity* to the positive seed nodes $V_C$ in the graph (for example a gene associated with a disease, or a patient with a specific clinical outcome).
 
-Let $phi: cal(X) -> cal(H)$ be a mapping from the input node space $cal(X)$ to a Reproducing Kernel Hilbert Space (RKHS) $cal(H)$ induced by a positive semi-definite kernel $K(x_i, x_j) = ⟨phi(x_i), phi(x_j)⟩$[cite: 205].
-If we measure the squared Euclidean distance in feature space $cal(H)$ between node $i$ and the *centroid* of the positive class $V_C$, we get[cite: 205]:
+To achieve this, RANKS works on a *kernelized graph* $G_K = (mb(V), mr(E), mg(K))$, where the original similarity matrix $W$ is replaced by a *graph kernel* $K$ that captures global topological relationships between nodes. Then, a *kernelized score function* $S(v, V_C)$ is applied to rank the nodes in $V$ according to their likelihood of belonging to class $C$.
+
+#figure(
+  caption: [Schematic view of a kernelized scoring procedure: positive seed nodes induce augmented connectivity, which is then used to score and rank unlabeled nodes.],
+)[
+  #align(center)[
+    #cetz.canvas(length: 0.72cm, padding: 0.15cm, {
+      import cetz.draw: *
+
+      let edges = (
+        (0, 1),
+        (0, 2),
+        (1, 2),
+        (1, 3),
+        (2, 3),
+        (2, 4),
+        (3, 5),
+        (4, 5),
+        (4, 6),
+        (5, 7),
+        (6, 7),
+        (6, 8),
+        (7, 9),
+        (8, 9),
+        (3, 4),
+      )
+      let nodes = (
+        (0.4, 2.8),
+        (1.8, 3.6),
+        (2.9, 2.7),
+        (4.2, 3.5),
+        (4.8, 2.0),
+        (5.8, 1.0),
+        (3.8, 0.4),
+        (2.3, 0.8),
+        (1.0, 0.2),
+        (6.2, 2.4),
+      )
+      let positive = (1, 2, 3)
+
+      let point(origin, node) = (
+        origin.at(0) + node.at(0),
+        origin.at(1) + node.at(1),
+      )
+
+      let draw-network(origin, augmented: false, scored: false) = {
+        // Original edges are black; red edges represent kernel augmentation.
+        for edge in edges {
+          let start = point(origin, nodes.at(edge.at(0)))
+          let end = point(origin, nodes.at(edge.at(1)))
+          line(
+            start,
+            end,
+            stroke: if augmented and (edge.at(0) == 1 or edge.at(1) == 1 or edge.at(0) == 3 or edge.at(1) == 3) {
+              1pt + red
+            } else {
+              0.8pt + black
+            },
+          )
+        }
+
+        for index in range(nodes.len()) {
+          let pos = point(origin, nodes.at(index))
+          let fill-col = if scored and index == 1 {
+            blue
+          } else if scored and index == 3 {
+            red
+          } else if scored and index == 8 {
+            green
+          } else if scored and index == 9 {
+            yellow
+          } else if positive.contains(index) {
+            white
+          } else {
+            gray.lighten(45%)
+          }
+          circle(
+            pos,
+            radius: if positive.contains(index) or scored and (index == 1 or index == 3) { 0.14 } else { 0.11 },
+            fill: fill-col,
+            stroke: 0.7pt + black,
+          )
+        }
+      }
+
+      // Original network.
+      content((0.2, 4.25), text(size: 8pt, weight: "bold")[Original network])
+      draw-network((0, 0), augmented: false, scored: false)
+      content((0.0, 3.55), text(size: 7pt)[Positive seeds])
+      line((0.85, 3.58), (1.55, 3.58), stroke: 0.6pt + gray)
+
+      // Kernelized network.
+      content((8.0, 4.25), text(size: 8pt, weight: "bold")[Random-walk kernel])
+      draw-network((7.7, 0), augmented: true, scored: false)
+      content((12.0, 3.85), text(size: 7pt)[Augmented connectivity])
+      line((11.8, 3.58), (11.0, 3.58), stroke: 0.6pt + gray)
+
+      // Scored unlabeled nodes.
+      content((0.2, -0.55), text(size: 8pt, weight: "bold")[Scoring of unlabeled nodes])
+      draw-network((0, -4.5), augmented: false, scored: true)
+      content((0.0, -0.95), text(size: 7pt)[Positive nodes])
+      line((0.8, -0.98), (1.45, -0.98), stroke: 0.6pt + gray)
+
+      // Ranking axis.
+      content((8.1, -0.55), text(size: 8pt, weight: "bold")[Node ranking])
+      line((9.4, -4.25), (9.4, -0.9), stroke: 0.8pt + black)
+      line((9.25, -1.0), (9.55, -1.0), stroke: 0.8pt + black)
+      line((9.25, -4.15), (9.55, -4.15), stroke: 0.8pt + black)
+      content((10.2, -0.75), text(size: 7pt)[high rank])
+      content((10.2, -4.45), text(size: 7pt)[low rank])
+      circle((9.4, -1.55), radius: 0.1, fill: red, stroke: 0.6pt + black)
+      circle((9.4, -2.35), radius: 0.1, fill: blue, stroke: 0.6pt + black)
+      circle((9.4, -3.0), radius: 0.1, fill: green, stroke: 0.6pt + black)
+      circle((9.4, -3.7), radius: 0.1, fill: yellow, stroke: 0.6pt + black)
+      content((11.5, -1.55), text(size: 7pt)[connected with 4 positives])
+      content((11.5, -2.75), text(size: 7pt)[connected with 2 positives])
+      content((10.1, -3.5), text(size: 7pt)[...])
+    })
+  ]
+]
+
+#example()[
+  *Intuitive interpretation of the Random Walk Kernel in RANKS*:
+  - In the *original network*, edges only connect patients (or biomolecules) that are directly similar (1-step connections).
+  - Applying the *$q$-step Random Walk Kernel* creates a graph with *augmented connectivity*: it adds new indirect edges (weighted by the probability of $q$-step random walks) between nodes that were not directly connected in the original graph but share multi-step paths through intermediate neighbors.
+  - Consequently, the kernel *enriches the notion of similarity* by incorporating global topological information. Unlabeled nodes that become strongly connected to multiple positive seed nodes in this augmented graph receive a high score from the local score function ($S_"AV"$, $S_"kNN"$, or $S_"NN"$) and are ranked at the top.
+]
+
+
+
+=== Mathematical Derivation of Kernelized Score Functions
+
+Let $phi: cal(X) -> cal(H)$ be a mapping from the input node space $cal(X)$ to a Reproducing Kernel Hilbert Space (RKHS) $cal(H)$ induced by a positive semi-definite kernel $K(x_i, x_j) = ⟨phi(x_i), phi(x_j)⟩$.
+
+In this new space, the nodes create a *point cloud*, the centroid of this cloud is the mean of the positive seed nodes $V_C$:
 $
-  D_"AV" (i, V_C) & = norm(phi(x_i) - 1 / (|V_C|) sum_(j in V_C) phi(x_j))^2 \
-  & = ⟨phi(x_i), phi(x_i)⟩ - 2 / (|V_C|) sum_(j in V_C) ⟨phi(x_i), phi(x_j)⟩ + 1 / (|V_C|^2) sum_(k in V_C) sum_(j in V_C) ⟨phi(x_k), phi(x_j)⟩
+  "Centroid" = 1 / (|V_C|) sum_(j in V_C) phi(x_j)
 $
-Replacing inner products with the kernel $K$, flipping the sign to turn distance into similarity, and dropping the last term (which is constant with respect to $i$) yields the *Average Score*[cite: 205]:
+Now, we want to measure the distance between an unknown node $x$ and the centroid of the positive class $V_C$ in this feature space. A natural choice is the *squared Euclidean distance*:
+$
+  D_"AV" (i, V_C) = norm(phi(x_i) - 1 / (|V_C|) sum_(j in V_C) phi(x_j))^2\
+  "by using" (||a-b||^2 = ⟨a, a⟩ - 2⟨a, b⟩ + ⟨b, b⟩), ||a||^2 = <a,a>\
+  <phi(x_i), phi(x_i)> - 2 <phi(x_i), 1 / (|V_C|) sum_(j in V_C) phi(x_j)> + <1 / (|V_C|) sum_(j in V_C) phi(x_j), 1 / (|V_C|) sum_(j in V_C) phi(x_j)> \
+  <phi(x_i), phi(x_i)> - 2 / (|V_C|) sum_(j in V_C) <phi(x_i), phi(x_j)> + 1 / (|V_C|^2) sum_(k in V_C) sum_(j in V_C) <phi(x_k), phi(x_j)>
+$
+Replacing inner products with the kernel $K$, flipping the sign to turn distance into similarity, and dropping the last term (which is constant with respect to $i$) yields the *Average Score*:
 $
   S_"AV" (i, V_C) = -K(x_i, x_i) + 2 / (|V_C|) sum_(j in V_C) K(x_i, x_j)
 $
-Assuming equal self-similarity $K(x_i, x_i)$ across nodes (or normalizing the kernel), this simplifies to the तीन standard *Kernelized Score Functions* used in RANKS[cite: 203]:
-- *Average Score ($S_"AV"$)*: averages the kernel similarity between node $v$ and all positive nodes in $V_C$ [cite: 203, 294]:
+Assuming equal self-similarity $K(x_i, x_i)$ across nodes (or normalizing the kernel), this simplifies to the standard *Kernelized Score Functions* used in RANKS.
+
+#note[
+  The score to classfy a node $v$ depends only on the mean of the kernel similarities between $v$ and the positive seed nodes $V_C$.
+]
+We can define three main kernelized score functions for ranking nodes in RANKS:
+- *Average Score ($S_"AV"$)*: averages the kernel similarity between node $v$ and all positive nodes in $V_C$:
   $
     S_"AV" (v, V_C) = 1 / (|V_C|) sum_(x in V_C) K(v, x)
   $
@@ -295,54 +440,54 @@ Assuming equal self-similarity $K(x_i, x_i)$ across nodes (or normalizing the ke
 
 ==== The Random Walk Kernel
 
-A particularly effective kernel for capturing graph topology is the *$q$-step Random Walk Kernel* (Smola and Kondor, 2003)[cite: 204, 294]:
-- Let $W$ be the symmetric similarity matrix and $D$ the diagonal degree matrix with $d_(i i) = sum_j w_(i j)$[cite: 204, 294].
-- The unnormalized graph Laplacian is $L = D - W$, and the *symmetric normalized graph Laplacian* is[cite: 204, 294]:
-  $ tilde(L) = D^(-1/2) L D^(-1/2) = D^(-1/2) (D - W) D^(-1/2) = I - D^(-1/2) W D^(-1/2) $- The *1-step Random Walk Kernel* is defined as[cite: 204, 294]:
+A particularly effective kernel for capturing graph topology is the *$q$-step Random Walk Kernel* (Smola and Kondor, 2003):
+- Let $W$ be the symmetric similarity matrix and $D$ the diagonal degree matrix with $d_(i i) = sum_j w_(i j)$.
+- The unnormalized graph Laplacian is $L = D - W$, and the *symmetric normalized graph Laplacian* is:
+  $ tilde(L) = D^(-1/2) mr(L) D^(-1/2) = D^(-1/2) mr((D - W)) D^(-1/2) = I - D^(-1/2) W D^(-1/2) $- The *1-step Random Walk Kernel* is defined as:
   $
     K_"rw" = a I - tilde(L) = (a - 1) I + D^(-1/2) W D^(-1/2)
   $
-  where $a >= 1$ (typically $a >= 2$ to ensure positive semi-definiteness) is a parameter that controls the relative weight of self-connections (staying at the current node) versus moving to neighboring nodes[cite: 204, 294].
-- The * $q$-step Random Walk Kernel* is obtained by raising the 1-step kernel to the power $q$[cite: 204]:$ K_"rw"^q = (a I - tilde(L))^q = ((a - 1) I + D^(-1/2) W D^(-1/2))^q $
+  where $a >= 1$ (typically $a >= 2$ to ensure positive semi-definiteness) is a parameter that controls the relative weight of self-connections (staying at the current node) versus moving to neighboring nodes.
+- The * $q$-step Random Walk Kernel* is obtained by raising the 1-step kernel to the power $q$:$ K_"rw"^q = (a I - tilde(L))^q = ((a - 1) I + D^(-1/2) W D^(-1/2))^q $
 
-#example()[
-  *Intuitive interpretation of the Random Walk Kernel in RANKS*[cite: 206, 294]:
-  - In the *original network*, edges only connect patients (or biomolecules) that are directly similar (1-step connections)[cite: 206, 294].
-  - Applying the *$q$-step Random Walk Kernel* creates a graph with *augmented connectivity*: it adds new indirect edges (weighted by the probability of $q$-step random walks) between nodes that were not directly connected in the original graph but share multi-step paths through intermediate neighbors[cite: 206, 294].
-  - Consequently, the kernel *enriches the notion of similarity* by incorporating global topological information[cite: 206, 294]. Unlabeled nodes that become strongly connected to multiple positive seed nodes in this augmented graph receive a high score from the local score function ($S_"AV"$, $S_"kNN"$, or $S_"NN"$) and are ranked at the top[cite: 203, 206, 294].
+
+== The P-Net Algorithm for Patient Similarity Networks
+
+*P-Net* (Gliozzo et al., *Scientific Reports*, 2020) adapts the RANKS framework specifically to Patient Similarity Networks for clinical outcome prediction (like: prognosis, diagnosis, prediction of drug response, or survival).
+
+
+The $P$-Net algorithm consists of the following steps:
+1. *Patient matrix construction*: each patient $p_i$ is represented by a feature vector $(f_1, dots, f_m)$ (e.g., gene expression, clinical biomarkers), forming a patient-by-feature matrix $M$.
+2. *Data cleaning and initial similarity matrix ($W$) construction*: after preprocessing, a *pairwise similarity metric* (e.g., Pearson correlation, cosine similarity) is computed between all pairs of patients to build the square similarity matrix $W$.
+3. *Kernel matrix ($K$) construction*: a graph kernel (such as the $q$-step Random Walk Kernel) is applied to $W$ to obtain the kernel matrix $K$, capturing global relationships across the patient cohort.
+4. *P-Net filtering (sparsification)*: while kernelization enriches the similarity representation, it also makes the *matrix dense* and introduces weak, noisy connections between distant patients. A filtering step removes edges whose kernel weights fall below a given threshold (or retains only top-$k$ neighbors), eliminating noise while preserving informative multi-step connections.
+5. *Node (patient) scoring*: a kernelized score function ($S_"AV"$, $S_"kNN"$, or $S_"NN"$) is applied over the filtered kernel matrix to score and rank patients with respect to the clinical phenotype or outcome $C$ under study.
+
+#figure[
+  #align(center)[
+    #image("../img/pndg.png", width: 70%)
+  ]
 ]
 
-=== The P-Net Algorithm for Patient Similarity Networks
-
-*P-Net* (Gliozzo et al., *Scientific Reports*, 2020) adapts the RANKS framework specifically to Patient Similarity Networks for clinical outcome prediction[cite: 229, 294]. It consists of five main steps[cite: 229]:
-
-1. *Patient matrix construction*: each patient $p_i$ is represented by a feature vector $(f_1, dots, f_m)$ (e.g., gene expression, clinical biomarkers), forming a patient-by-feature matrix $M$[cite: 229, 294].
-2. *Data cleaning and initial similarity matrix ($W$) construction*: after preprocessing, a pairwise similarity metric (e.g., Pearson correlation, cosine similarity, Euclidean-based Gaussian kernel, or Jaccard/Tanimoto index) is computed between all pairs of patients to build the square similarity matrix $W$[cite: 229, 294].
-3. *Kernel matrix ($K$) construction*: a graph kernel (such as the $q$-step Random Walk Kernel) is applied to $W$ to obtain the kernel matrix $K$, capturing global relationships across the patient cohort[cite: 204, 229, 294].
-4. *P-Net filtering (sparsification)*: while kernelization enriches the similarity representation, it also makes the matrix dense and introduces weak, noisy connections between distant patients[cite: 229, 294]. A filtering step removes edges whose kernel weights fall below a given threshold (or retains only top-$k$ neighbors), eliminating noise while preserving informative multi-step connections[cite: 229, 294].
-5. *Node (patient) scoring*: a kernelized score function ($S_"AV"$, $S_"kNN"$, or $S_"NN"$) is applied over the filtered kernel matrix to score and rank patients with respect to the clinical phenotype or outcome $C$ under study[cite: 203, 229, 294].
-
-#warning()[
-  *Trade-off in Graph Kernelization and Network Integration*[cite: 210, 229, 294]:
-  Enriching a graph via a multi-step kernel (or by integrating multiple biological networks, such as combining chemical structural similarity $N_"structSim"$, drug-target projections $N_"drugTarget"$, and chemical interactions $N_"drugChem"$ in drug repositioning) dramatically increases network connectivity and coverage, leading to statistically significant improvements in AUC and Precision-Recall[cite: 208, 209, 210, 212, 213]. However, excessive densification can introduce topological noise, making proper pre-processing, normalization, and *network filtering* essential[cite: 216, 229, 294].
+#warning(title: "Trade-off in Graph Kernelization and Network Integration")[
+  *Enriching* a graph via a multi-step kernel (or by integrating multiple biological networks, such as combining chemical structural similarity $N_"structSim"$, drug-target projections $N_"drugTarget"$, and chemical interactions $N_"drugChem"$ in drug repositioning) dramatically increases network connectivity and coverage, leading to statistically significant improvements in AUC and Precision-Recall. However, excessive densification can introduce topological noise, making proper pre-processing, normalization, and *network filtering* essential.
 ]
 
 == Multi-Modal PSN Integration, Missing Data, and Dimensionality Reduction
 
-=== Taxonomies of Multi-Modal Data Integration
+When *multiple data modalities* (e.g., DNA methylation, mRNA expression, protein abundance, clinical data) are available for the same set of patients (*multimodal / heterogeneous datasets*, working in a *parallel-vertical integration flow*), integrative PSN methods are classified into three main paradigms:
 
-When multiple data modalities (e.g., DNA methylation, mRNA expression, protein abundance, clinical data) are available for the same set of patients (*multimodal / heterogeneous datasets*, working in a *parallel-vertical integration flow*), integrative PSN methods are classified into three main paradigms (Gliozzo et al., *Briefings in Bioinformatics*, 2022)[cite: 234, 235, 236]:
+1. *Input-data fusion (Early integration / concatenation-based methods)*:
+  - First, the separate data matrices are transformed or embedded into a *joint shared low-dimensional latent space* during pre-processing using methods such as *JIVE / AJIVE* (PCA-based), *intNMF / iNMF* (Non-negative Matrix Factorization-based).
+  - Second, a *single PSN* is computed on the integrated latent representation and used for downstream unsupervised clustering or supervised classification.
 
-1. *Input-data fusion (Early integration / concatenation-based methods)*[cite: 235, 237]:
-  - First, the separate data matrices are transformed or embedded into a *joint shared low-dimensional latent space* during pre-processing—using methods such as *JIVE / AJIVE* (PCA-based), *intNMF / iNMF* (Non-negative Matrix Factorization-based), or *MOFA+* (Generalized Matrix Factorization-based)[cite: 237, 248].
-  - Second, a *single PSN* is computed on the integrated latent representation and used for downstream unsupervised clustering or supervised classification[cite: 237].
-2. *Output-data integration (Late integration)*[cite: 235, 238]:
-  - First, an independent *unimodal PSN* is built for each data modality using a modality-specific similarity measure[cite: 238].
-  - Second, clustering or classification is performed separately on each unimodal PSN[cite: 238].
-  - Third, the individual predictions or clusterings are combined at the end via consensus aggregation or meta-models (e.g., *SUMO*, *PINSPlus*)[cite: 235, 238].
-3. *PSN-fusion (Intermediate / Model integration)*[cite: 235, 239]:
-  - First, a separate *unimodal PSN* is constructed for each data modality[cite: 239].
-  - Second, the unimodal networks are fused into a *single integrated PSN* via network-fusion algorithms—such as *SNF (Similarity Network Fusion)*, *NEMO*, *netDx*, or *MSNE*—prior to running downstream clustering or outcome prediction[cite: 239].
+2. *Output-data integration (Late integration)*:
+  - First, an independent *unimodal PSN* is built for each data modality using a modality-specific similarity measure.
+  - Second, clustering or classification is performed separately on each unimodal PSN.
+  - Third, the individual predictions or clusterings are combined at the end via consensus aggregation or meta-models (e.g., *SUMO*, *PINSPlus*).
+3. *PSN-fusion (Intermediate / Model integration)*:
+  - First, a separate *unimodal PSN* is constructed for each data modality.
+  - Second, the unimodal networks are fused into a *single integrated PSN* via network-fusion algorithms—such as *SNF (Similarity Network Fusion)*, *NEMO*, *netDx*, or *MSNE*—prior to running downstream clustering or outcome prediction.
 
 === Similarity Network Fusion (SNF), MP-Net, and Miss-SNF
 
