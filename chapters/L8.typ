@@ -531,31 +531,30 @@ Using block-analysis and the *two-NN ID estimator* ($hat(d)_"twonn"$), one can d
 
 = Graph Representation Learning (GRL)
 
-== Introduction to Graph Embeddings
+In traditional machine learning on graph (e.g for node classification, link prediction, community detection, or network similarity) the *featuring engineering* step was *manual* and *task-specific*. In this phase, we need to represent each node (or edge/subgraph) in the graph as a *feature vector* $x_u in RR^m$ (e.g., using node degree, clustering coefficient, centrality measures, or hand-crafted topological features).
 
-In traditional machine learning on graphs—whether for node classification, link prediction, community detection, or network similarity—one had to perform tedious manual *feature engineering* for every task (computing node degree, PageRank scores, clustering coefficients, graph motifs, etc.)[cite: 136, 137, 138].
-
-*Graph Representation Learning (GRL)* eliminates manual feature engineering by *automatically learning* low-dimensional vector representations (*embeddings*) of nodes (or edges/subgraphs) directly from the network structure[cite: 138, 139, 140, 294]:
+*Graph Representation Learning (GRL)* eliminates manual feature engineering by *automatically learning* low-dimensional vector representations (*embeddings*) of nodes (or edges/subgraphs) directly from the network structure:
 $
   f: u in V -> bold(z)_u in RR^d quad "with" quad d << |V|
 $
-The goal is to project the original graph into a low-dimensional *Euclidean latent space* $RR^d$ such that the geometric proximity (e.g., dot product or cosine similarity) between embedded vectors reflects the topological similarity and link strength between nodes in the original network[cite: 140, 142, 294]. Once learned, these embedded vectors can be fed into any standard unsupervised algorithm (e.g., clustering for patient stratification, community detection, anomaly detection) or supervised inductive classifier (e.g., node label prediction, link prediction, clinical outcome prediction)[cite: 140, 175, 230, 231, 294].
+The goal is to project the original graph into a low-dimensional *Euclidean latent space* $RR^d$ such that the geometric proximity (e.g., dot product or cosine similarity) between embedded vectors reflects the topological similarity and link strength between nodes in the original network. Once learned, these embedded vectors can be fed into any standard unsupervised algorithm (e.g., clustering for patient stratification) or supervised inductive classifier (e.g., node label prediction, link prediction).
 
-#warning()[
-  *Why is Graph Embedding Hard? (Graphs are Non-Euclidean)*[cite: 143, 144, 145, 294]:
-  - *Images* have a fixed, regular *2D grid* structure, and *text or audio signals* have a regular *1D linear* structure, where spatial locality and sliding windows (convolutions) are naturally well-defined[cite: 143, 144].
-  - *Graphs are non-Euclidean*: they have an arbitrary, irregular topology with no fixed notion of direction or coordinate grid, and *node numbering (ordering) is completely arbitrary* (related to the graph isomorphism problem)[cite: 144, 145, 294].
+#warning(title: "Why is Graph Embedding Hard?")[
+  - *Images* have a fixed, regular *2D grid* structure, and *text or audio signals* have a regular *1D linear* structure, where spatial locality and sliding windows (convolutions) are naturally well-defined.
+  - *Graphs are non-Euclidean*: they have an arbitrary, irregular topology with no fixed notion of direction or coordinate grid, and *node numbering (ordering) is completely arbitrary* (related to the graph isomorphism problem).
+
+  Non Euclidian means that the *distance between nodes* is not simply a function of their coordinates, but rather depends on the *graph topology* (e.g., shortest path length, number of shared neighbors, or higher-order connectivity patterns).
 ]
 
-There are two main research lines in Graph Representation Learning[cite: 146, 147, 232, 294]:
-1. *Random Walk-based Graph Embedding* (e.g., *DeepWalk*, *node2vec*, *Het-node2vec*): *linearizes* the graph topology by generating sequences ("sentences") of nodes through random walks, and then optimizes an embedding lookup table so that nodes co-occurring in short random walks are mapped close together in $RR^d$[cite: 146, 147, 174, 232, 294].
-2. *Graph Neural Networks (GNNs)* (e.g., *Graph Convolutional Networks (GCNs)*, *Graph Attention Networks (GATs)*, *GraphSAGE*): fuse *graph topology* and *node/edge attributes*, iteratively propagating and aggregating feature messages between neighboring nodes in an *end-to-end* supervised or semi-supervised manner[cite: 146, 147, 232, 294].
+There are two main research lines in Graph Representation Learning:
+1. *Random Walk-based Graph Embedding* (e.g., *DeepWalk*, *node2vec*, *Het-node2vec*): *linearizes* the graph topology by generating sequences (_sentences_) of nodes through random walks, and then optimizes an embedding lookup table so that nodes co-occurring in short random walks are mapped close together in $RR^d$.
+2. *Graph Neural Networks (GNNs)* (e.g., *Graph Convolutional Networks (GCNs)*, *Graph Attention Networks (GATs)*, *GraphSAGE*): fuse *graph topology* and *node/edge attributes*, iteratively propagating and aggregating feature messages between neighboring nodes in an *end-to-end* supervised or semi-supervised manner.
 
 #figure(
-  caption: [Comparison between the two main GRL paradigms: (1) Two-step Graph Embedding based on topology and random walks, and (2) End-to-end Graph Neural Networks fusing topology and node attributes[cite: 147, 232].],
+  caption: [Comparison between the two main GRL paradigms: (1) Two-step Graph Embedding based on topology and random walks, and (2) End-to-end Graph Neural Networks fusing topology and node attributes],
 )[
   #align(center)[
-    #cetz.canvas(length: 0.85cm, padding: 0.2cm, {
+    #cetz.canvas(length: 1.15cm, padding: 0.2cm, {
       import cetz.draw: *
 
       // --- 1. GRAPH EMBEDDING ---
@@ -569,7 +568,7 @@ There are two main research lines in Graph Representation Learning[cite: 146, 14
       content((5.2, 2.5), align(center, text(
         size: 8.5pt,
         fill: purple.darken(20%),
-      )[*Graph Embedding* (e.g., `node2vec`)]))
+      )[*Graph Embedding*]))
 
       line((6.8, 2.5), (8.0, 2.5), mark: (end: ">", fill: black), stroke: 0.8pt)
 
@@ -585,7 +584,7 @@ There are two main research lines in Graph Representation Learning[cite: 146, 14
       // --- 2. GRAPH NEURAL NETWORK ---
       content((-0.6, 0.4), text(weight: "bold", fill: maroon)[2.])
       rect((0, -0.2), (2.4, 1.0), radius: 0.15, stroke: 0.8pt + black, fill: orange.lighten(85%))
-      content((1.2, 0.4), align(center, text(size: 8.5pt)[*Attributes* (Node Features)]))
+      content((1.2, 0.4), align(center, text(size: 8.5pt)[*Attributes* \ (Node Features)]))
 
       // Fusion arrows into GNN
       line((1.2, 1.9), (1.2, 1.3), (5.2, 1.3), (5.2, 1.0), mark: (end: ">", fill: black), stroke: 0.8pt)
@@ -593,7 +592,7 @@ There are two main research lines in Graph Representation Learning[cite: 146, 14
       content((3.7, 0.1), text(size: 7.5pt)[Fusion])
 
       rect((5.2, -0.2), (8.8, 1.0), radius: 0.15, stroke: 1pt + blue.darken(20%), fill: blue.lighten(90%))
-      content((7.0, 0.4), align(center, text(size: 8.5pt, fill: blue.darken(30%))[*Graph Neural Network* (GNN / GCN)]))
+      content((7.0, 0.4), align(center, text(size: 8.5pt, fill: blue.darken(30%))[*Graph Neural Network*]))
 
       line((8.8, 0.4), (12.4, 0.4), mark: (end: ">", fill: black), stroke: 0.8pt)
       content((10.6, 0.1), text(size: 7.5pt)[End-to-end])
@@ -608,28 +607,36 @@ There are two main research lines in Graph Representation Learning[cite: 146, 14
 
 === Word2Vec and the Skip-Gram Architecture
 
-Before embedding graphs, random-walk methods draw direct inspiration from *Word2Vec* (Mikolov et al., *NIPS / ICLR*, 2013), an algorithm designed to learn continuous vector representations of words from linear text[cite: 149, 150, 153, 294].
-
-Word2Vec relies on the *distributional hypothesis*: words that appear in similar surrounding contexts (i.e., have similar neighboring words within a sliding window) are semantically related and should be mapped to nearby points in Euclidean space[cite: 149, 154, 294].
-- Given a source sentence (e.g., *"The quick brown fox jumps over the lazy dog"*), a sliding context window around each target word generates training pairs of $("target word", "context word")$, such as `("fox", "quick")`, `("fox", "brown")`, `("fox", "jumps")`, `("fox", "over")`[cite: 149].
-- In the *Skip-Gram model*, a shallow *one-hidden-layer neural network* is trained to predict the surrounding context words given a target input word[cite: 150, 153, 294]:
-  1. *Input layer*: the $i$-th word in a vocabulary of size $n$ (e.g., $n = 10,000$ words) is represented as a *one-hot encoded column vector* $bold(x)_i in {0, 1}^n$, having a single $1$ at index $i$ and $0$ elsewhere[cite: 150, 151, 294].
-  2. *Hidden (Embedding) layer*: the input vector is multiplied by a learnable *embedding weight matrix* $W in RR^(n times p)$, where $p$ (or $d$, e.g., $p = 300$) is the embedding dimension[cite: 150, 151, 294]. Because $bold(x)_i$ is one-hot encoded, the product
-    $
-      bold(z)_i^T = bold(x)_i^T W in RR^(1 times p)
-    $
-    simply selects the *$i$-th row of $W$*[cite: 151]. Thus, $W$ acts as a *lookup table* where row $i$ is the $p$-dimensional embedding $bold(z)_i$ of word $i$, and the hidden layer consists of $p$ linear neurons (no nonlinear activation function)[cite: 150, 151, 294].
-  3. *Output (Softmax) layer*: the hidden vector $bold(z)_i$ is multiplied by a second *context weight matrix* $U in RR^(p times n)$ (also denoted $W'$) to produce raw logits $bold(y) = U^T bold(z)_i in RR^n$[cite: 152, 153, 294]. A *softmax classifier* converts these scores into a probability distribution over all $n$ words in the vocabulary[cite: 150, 152, 294]:
-    $
-      P("word" j "in context" | "word" i) = "softmax"(y_j) = (exp(y_j)) / (sum_(k=1)^n exp(y_k)) = (exp(bold(z)_i^T bold(u)_j)) / (sum_(k=1)^n exp(bold(z)_i^T bold(u)_k))
-    $
+Before embedding graphs, random-walk methods draw direct inspiration from *Word2Vec*, an algorithm designed to *learn continuous vector* representations of words *from linear text*.
 
 #note()[
-  In Skip-Gram, the neural network prediction task is only a *proxy (pretext) task*: once training is complete, the output layer is discarded and the learned rows of the weight matrix $W$ are used as the Euclidean word embeddings[cite: 149, 151, 152, 294].
+  Word2Vec relies on the *distributional hypothesis*: words that appear in similar surrounding contexts (i.e., have similar neighboring words within a sliding window) are semantically related and should be mapped to nearby points in Euclidean space.
+]
+
+Given a source sentence (e.g., _The quick brown fox jumps over the lazy dog_), a sliding context window around each target word generates training pairs of *$("target word", "context word")$*, such as `("fox", "quick")`, `("fox", "brown")`, `("fox", "jumps")`, `("fox", "over")`.
+
+In the *Skip-Gram model*, a shallow *one-hidden-layer neural network* is trained to predict the surrounding context words given a target input word:
+1. *Input layer*: the $i$-th word in a vocabulary of size $n$ (e.g., $n = 10,000$ words) is represented as a *one-hot encoded column vector* $bold(x)_i in {0, 1}^n$, having a single $1$ at index $i$ and $0$ elsewhere.
+
+2. *Hidden (Embedding) layer*: the input vector is multiplied by a learnable *embedding weight matrix* $W in RR^(n times p)$, where $p$ (or $d$, e.g., $p = 300$) is the embedding dimension. Because $bold(x)_i$ is one-hot encoded, the product
+  $
+    bold(z)_i^T = bold(x)_i^T W in RR^(1 times p)
+  $
+  simply selects the *$i$-th row of $W$*. Thus, $W$ acts as a *lookup table* where row $i$ is the $p$-dimensional embedding $bold(z)_i$ of word $i$, and the hidden layer consists of $p$ linear neurons.
+
+3. *Output (Softmax) layer*: the hidden vector $bold(z)_i$ is multiplied by a second *context weight matrix* $U in RR^(p times n)$ (also denoted $W'$) to produce raw logits: $ bold(y) = U^T bold(z)_i in RR^n $
+
+  A *softmax classifier* converts these scores into a probability distribution over all $n$ words in the vocabulary:
+  $
+    P("word" j "in context" | "word" i) = "softmax"(y_j) = (exp(y_j)) / (sum_(k=1)^n exp(y_k)) = (exp(bold(z)_i^T bold(u)_j)) / (sum_(k=1)^n exp(bold(z)_i^T bold(u)_k))
+  $
+
+#note()[
+  In Skip-Gram, the neural network prediction task is only a *proxy task*: once training is complete, the output layer is discarded and the learned rows of the weight matrix $W$ are used as the Euclidean word embedding.
 ]
 
 #figure(
-  caption: [Architecture of the Skip-Gram neural network used in Word2Vec and adapted for Random Walk graph embeddings (`DeepWalk` / `node2vec`)[cite: 150, 153, 164].],
+  caption: [Architecture of the Skip-Gram neural network used in Word2Vec and adapted for Random Walk graph embeddings (`DeepWalk` / `node2vec`).],
 )[
   #align(center)[
     #cetz.canvas(length: 0.85cm, padding: 0.2cm, {
@@ -651,7 +658,7 @@ Word2Vec relies on the *distributional hypothesis*: words that appear in similar
       rect((2.2, 0.6), (4.8, 3.4), stroke: 0.9pt + orange.darken(20%), fill: orange.lighten(88%))
       rect((2.2, 2.0), (4.8, 2.5), stroke: 1pt + red.darken(10%), fill: orange.lighten(55%))
       content((3.5, 2.25), text(size: 7.5pt, weight: "bold")[Row $i$: $bold(z)_i = f(u_i)$])
-      content((3.5, 1.2), align(center, text(size: 8.5pt)[*Matrix $W$* ($|V| times d$) Lookup Table]))
+      content((3.5, 1.2), align(center, text(size: 8.5pt)[*Matrix $W$* \ ($|V| times d$)]))
 
       line((1.0, 2.25), (2.2, 2.25), mark: (end: ">", fill: black), stroke: 0.8pt)
       line((4.8, 2.25), (6.0, 2.25), mark: (end: ">", fill: black), stroke: 0.8pt)
@@ -670,7 +677,7 @@ Word2Vec relies on the *distributional hypothesis*: words that appear in similar
 
       // Context Matrix W' / U
       rect((8.0, 0.9), (10.6, 3.2), stroke: 0.9pt + green.darken(30%), fill: green.lighten(88%))
-      content((9.3, 2.05), align(center, text(size: 8.5pt)[*Context Matrix $U$* ($d times |V|$)]))
+      content((9.3, 2.05), align(center, text(size: 7.3pt)[*Context Matrix $U$* \ ($d times |V|$)]))
 
       line((10.6, 2.05), (11.8, 2.05), mark: (end: ">", fill: black), stroke: 0.8pt)
 
@@ -688,94 +695,102 @@ Word2Vec relies on the *distributional hypothesis*: words that appear in similar
 
 === From Linear Text to Graphs: Neighborhood Strategies and Linearization
 
-To transfer the Skip-Gram paradigm from text to networks, we view *nodes as words* and define a notion of *node neighborhood $N_S (u)$* (generated by a sampling strategy $S$) that plays the role of the surrounding context window in a sentence[cite: 156, 159, 160, 294].
+To transfer the Skip-Gram paradigm from text to networks, we view *nodes as words* and define a notion of *node neighborhood $N_S (u)$* (generated by a *sampling strategy $S$*) that plays the role of the surrounding context window in a sentence.
 
-Different strategies $S$ can be used to define the neighborhood $N_S (u)$ of a node $u$[cite: 156, 157, 294]:
-- Direct $k$-hop neighbors (nodes at shortest-path distance $<= k$ from $u$)[cite: 157, 294].
-- Nodes lying along the shortest path between pairs of nodes[cite: 157].
-- *Nodes visited along a $k$-step random walk starting from $u$*[cite: 157, 158, 159, 294].
+Different strategies $S$ can be used to define the neighborhood $N_S (u)$ of a node $u$:
+- Direct $k$-hop neighbors (nodes at shortest-path distance $<= k$ from $u$).
+- Nodes lying along the shortest path between pairs of nodes.
+- *Nodes visited along a $k$-step random walk starting from $u$*.
 
-#example()[
-  *Graph Linearization via Random Walks*[cite: 159, 160, 294]:
-  Suppose we start a short random walk from node $10$ in a graph $G$[cite: 159, 160, 294]:
-  - Walk 1 (red): $(10 -> 15 -> 16)$ $==>$ generates Skip-Gram training pairs $(10, 15)$ and $(10, 16)$[cite: 159, 160, 294].
-  - Walk 2 (blue): $(10 -> 11 -> 5)$ $==>$ generates training pairs $(10, 11)$ and $(10, 5)$[cite: 159, 160, 294].
-  - Walk 3 (green): $(10 -> 9 -> 8)$ $==>$ generates training pairs $(10, 9)$ and $(10, 8)$[cite: 159, 160, 294].
-
-  By simulating multiple random walks across the network, we *linearize the non-Euclidean graph* into a corpus of node sequences ("sentences"), allowing us to apply One-Hot Encoding and the Skip-Gram architecture exactly as in Word2Vec[cite: 146, 159, 160, 294].
+#example(title: "Graph Linearization via Random Walks")[
+  Suppose we start a short random walk from node $10$ in a graph $G$:
+  - Walk 1 (red): $(10 -> 15 -> 16)$ $==>$ generates Skip-Gram training pairs $(10, 15)$ and $(10, 16)$
+  - Walk 2 (blue): $(10 -> 11 -> 5)$ $==>$ generates training pairs $(10, 11)$ and $(10, 5)$
+  - Walk 3 (green): $(10 -> 9 -> 8)$ $==>$ generates training pairs $(10, 9)$ and $(10, 8)$
 ]
+
+By simulating multiple random walks across the network, we *linearize the non-Euclidean graph* into a corpus of node sequences (*sentences*), allowing us to apply One-Hot Encoding and the Skip-Gram architecture exactly as in Word2Vec.
 
 == Optimization Objective and DeepWalk
 
-=== Feature Learning as Maximum Likelihood Optimization
-
-Given a graph $G = (V, E)$, our goal is to learn an embedding mapping $f: V -> RR^d$ (parameterized as a $|V| times d$ lookup table) that maximizes the log-probability of observing a node's network neighborhood $N_S (u)$ conditioned on its feature representation $f(u)$[cite: 161, 162, 163, 294]:
+Given a graph $G = (V, E)$, our goal is to *learn* an embedding mapping *$f: V -> RR^d$* (parameterized as a $|V| times d$ lookup table) that maximizes the log-probability of observing a node's network neighborhood $N_S (u)$ conditioned on its feature representation $f(u)$:
 $
   max_f sum_(u in V) log Pr(N_S (u) | f(u))
 $
 
-To make this optimization problem mathematically tractable, two fundamental assumptions are introduced[cite: 162, 163, 294]:
-1. *Conditional independence*: given the embedding $f(u)$ of the source node $u$, the probabilities of observing individual neighborhood nodes $n_i in N_S (u)$ factorize independently[cite: 162, 163, 294]:
+To make this optimization problem mathematically tractable, two fundamental assumptions are introduced:
+1. *Conditional independence*: given the embedding $f(u)$ of the source node $u$, the probabilities of observing individual neighborhood nodes $n_i in N_S (u)$ factorize independently:
   $
     Pr(N_S (u) | f(u)) = product_(n_i in N_S (u)) Pr(n_i | f(u))
   $
-2. *Symmetry in feature space*: a source node and a neighborhood node have a symmetric effect on each other in the embedding space. Therefore, the conditional probability of every source-neighborhood pair $(u, n_i)$ is modeled as a *softmax* over the dot product of their embeddings[cite: 162, 163, 294]:
+2. *Symmetry in feature space*: a source node and a neighborhood node have a symmetric effect on each other in the embedding space. Therefore, the conditional probability of every source-neighborhood pair $(u, n_i)$ is modeled as a *softmax* over the dot product of their embeddings:
   $
     Pr(n_i | f(u)) = (exp(f(n_i) dot f(u))) / (sum_(v in V) exp(f(v) dot f(u)))
   $
 
-Substituting both assumptions into the objective function yields[cite: 163, 294]:
+Substituting both assumptions into the objective function yields:
 $
   max_f sum_(u in V) log product_(n_i in N_S (u)) Pr(n_i | f(u)) & = max_f sum_(u in V) sum_(n_i in N_S (u)) log (exp(f(n_i) dot f(u))) / (sum_(v in V) exp(f(v) dot f(u))) \
   & = max_f sum_(u in V) [ -|N_S (u)| log Z_u + sum_(n_i in N_S (u)) f(n_i) dot f(u) ]
 $
-(often written compactly per neighborhood scaling as $max_f sum_(u in V) [ -log Z_u + sum_(n_i in N_S (u)) f(n_i) dot f(u) ]$)[cite: 163, 294], where
+(often written compactly per neighborhood scaling as $max_f sum_(u in V) [ -log Z_u + sum_(n_i in N_S (u)) f(n_i) dot f(u) ]$), where
 $
   Z_u = sum_(v in V) exp(f(u) dot f(v))
 $
-is the per-node *partition function* (normalization constant)[cite: 163, 294].
-- Intuitively, maximizing the second term $sum_(n_i in N_S (u)) f(n_i) dot f(u)$ pulls the embedding $f(u)$ close to the embeddings $f(n_i)$ of its neighbors (maximizing their dot-product similarity)[cite: 294].
-- Minimizing the first term $log Z_u$ pushes $f(u)$ away from all arbitrary non-neighboring nodes $v in V$ in the graph[cite: 294]. Because computing $Z_u$ over all $|V|$ nodes is expensive ($O(|V|)$), it is approximated in practice using *Hierarchical Softmax* (via a binary tree over $V$, as in DeepWalk) or *Negative Sampling* (as in node2vec), and optimized via *Stochastic Gradient Ascent / Descent (SGD)*[cite: 162, 163, 165, 173].
+is the per-node *partition function* (normalization constant).
+- Intuitively, maximizing the second term $sum_(n_i in N_S (u)) f(n_i) dot f(u)$ pulls the embedding $f(u)$ close to the embeddings $f(n_i)$ of its neighbors (maximizing their dot-product similarity).
+
+- Minimizing the first term $log Z_u$ pushes $f(u)$ away from all arbitrary *non-neighboring* nodes $v in V$ in the graph. Because computing $Z_u$ over all $|V|$ nodes is expensive ($O(|V|)$), it is approximated in practice using *Hierarchical Softmax* (via a binary tree over $V$, as in DeepWalk) or *Negative Sampling* (as in node2vec), and optimized via *Stochastic Gradient Ascent / Descent (SGD)*.
 
 === DeepWalk: First-Order Unbiased Random Walks
 
-The first strategy to sample $N_S (u)$ is *DeepWalk* (Perozzi et al., *ACM SIGKDD*, 2014), which uses *unbiased first-order random walks* (where at each step the walker moves to any connected neighbor with probability proportional only to the edge weight)[cite: 165, 294].
+The first strategy to sample $N_S (u)$ (a set of neighbour) is *DeepWalk*, which uses *unbiased first-order random walks* (where at each step the walker moves to any connected neighbor with probability proportional only to the edge weight).
 
-#example()[
-  *Algorithm: DeepWalk $(G, w, d, gamma, t)$*[cite: 165]
-  - *Inputs*: graph $G(V, E)$, context window size $w$, embedding dimension $d$, number of walks per vertex $gamma$, walk length $t$[cite: 165].
-  - *Output*: matrix of vertex representations $Phi in RR^(|V| times d)$[cite: 165].
-  1. Initialize $Phi$ by sampling uniformly from $cal(U)^(|V| times d)$[cite: 165].
-  2. Build a binary tree $T$ from $V$ (for Hierarchical Softmax)[cite: 165].
-  3. *for* $i = 1$ *to* $gamma$ *do*[cite: 165]:
-    - $cal(O) = "Shuffle"(V)$[cite: 165]
-    - *for each* $v_i in cal(O)$ *do*[cite: 165]:
-      - $cal(W)_(v_i) = "RandomWalk"(G, v_i, t)$[cite: 165]
-      - $"SkipGram"(Phi, cal(W)_(v_i), w)$[cite: 165]
-]
+The main idea is to linearize the graph by simulating $gamma$ random walks of length $t$ starting from each vertex $v_i in V$, and then feed the resulting sequences of nodes into a Skip-Gram model with context window size $w$ to learn the embedding matrix $Phi$. Each embedding vector $bold(z)_i$ take account the $N_s(u_i)$ and minimize the distance to its neighbors while maximizing the distance to non-neighbors.
 
-#note()[
-  *Role of the number of walks $gamma$*: if $gamma$ is too small (e.g., $gamma = 1$), only a single random trajectory is sampled from each vertex, which fails to capture the true structure of the node's neighborhood due to stochastic variance. A sufficiently large $gamma$ is required so that multiple random walks thoroughly explore the local and global neighborhood of every node[cite: 165, 294].
+
+*Algorithm: DeepWalk $(G, w, d, gamma, t)$*:
+#pseudocode(
+  [*Inputs*: $G(V, E)$, $w$ (context windows), $d$ ( embedding dimension), $gamma$ (number of walks per vertex), $t$ (walk length)],
+  [*Output*: matrix of vertex $Phi in R^(|V| times d)$],
+  [Initialize $Phi$ by sampling uniformly from $cal(U)^(|V| times d)$],
+  [Build a binary tree $T$ from $V$ (for Hierarchical Softmax)],
+  [*for* $i = 1$ *to* $gamma$ *do*],
+  indent(
+    [$cal(O) = "Shuffle"(V)$],
+    [*for each* $v_i in cal(O)$ *do*],
+    indent(
+      [$cal(W)_(v_i) = "RandomWalk"(G, v_i, t)$],
+      [$"SkipGram"(Phi, cal(W)_(v_i), w)$],
+    ),
+  ),
+)
+
+
+#note(title: "Role of the number of walks $gamma$")[
+  if $gamma$ is too small (e.g., $gamma = 1$), only a single random trajectory is sampled from each vertex, which fails to capture the true structure of the node's neighborhood due to stochastic variance. A *sufficiently large $gamma$ is required* so that multiple random walks thoroughly explore the local and global neighborhood of every node.
 ]
 
 == node2vec: Biased Second-Order Random Walks
 
-=== Interpolating Between BFS (Micro-View) and DFS (Macro-View)
+*node2vec* generalizes DeepWalk by observing that a flexible notion of neighborhood $N_S (u)$ should smoothly interpolate between two classic graph search strategies:
+1. *Breadth-First Search (BFS)*: explores only the immediate local neighborhood of $u$. It provides a *local microscopic view* of the neighborhood, which is ideal for characterizing *structural equivalence* (nodes that play similar structural roles in the network, such as *hubs* or *bridges*, even if they are far apart).
 
-*node2vec* (Grover and Leskovec, *KDD*, 2016) generalizes DeepWalk by observing that a flexible notion of neighborhood $N_S (u)$ should smoothly interpolate between two classic extreme graph search strategies[cite: 148, 166, 167, 168, 294]:
-1. *Breadth-First Search (BFS)*: explores only the immediate local neighborhood of $u$ ($N_"BFS" (u) = {s_1, s_2, s_3}$)[cite: 166]. It provides a *local microscopic view* of the neighborhood, which is ideal for characterizing *structural equivalence* (nodes that play similar structural roles in the network, such as hubs or bridges, even if they are far apart)[cite: 166, 167, 172, 180, 294].
-2. *Depth-First Search (DFS)*: explores paths moving progressively farther away from $u$ ($N_"DFS" (u) = {s_4, s_5, s_6}$)[cite: 166]. It provides a *global macroscopic view* of the neighborhood, which is essential for capturing *homophily* (nodes that belong to the same densely connected community or cluster)[cite: 166, 167, 172, 180, 294].
+2. *Depth-First Search (DFS)*: explores paths moving progressively farther away from $u$. It provides a *global macroscopic view* of the neighborhood, which is essential for capturing *homophily* (nodes that belong to the same densely connected community or cluster).
 
 === Biased 2nd-Order Random Walk Parameterization
 
-To interpolate between BFS and DFS, node2vec replaces first-order Markovian walks with a *biased second-order random walk ($"RW"_2$)* that remembers the previous node visited[cite: 169, 180, 294].
-Suppose the walk just traversed edge $(r, v)$ (so at time $t-1$ it was at node $r$, and at time $t$ it is currently at node $v$) and must choose the next node $x$ at time $t+1$[cite: 169, 170, 180].
+To interpolate between BFS and DFS, node2vec replaces first-order Markovian walks with a *biased second-order random walk ($"RW"_2$)* that remembers the previous node visited.
 
-The transition probability $P(X(t+1) = x | X(t) = v, X(t-1) = r)$ is proportional to the unnormalized transition weight[cite: 180]:
+Suppose the walk just traversed edge $(mr(r), mg(v))$ (so at time $t-1$ it was at node $mr(r)$, and at time $t$ it is currently at node $mg(v)$) and must choose the next node $x$ at time $t+1$. The *transition probability*
 $
-  pi_(v x) = alpha_(p, q) (r, x) dot w_(v, x)
+  P(X(t+1) = x | X(t) = v, X(t-1) = r)
 $
-where $w_(v, x)$ is the static edge weight between $v$ and $x$, and the search bias $alpha_(p,q)(r, x)$ depends on the *shortest-path distance $d_(r x) in {0, 1, 2}$* between the previous node $r$ and the candidate next node $x$, governed by two parameters $p$ and $q$[cite: 168, 169, 170, 180, 294]:
+is proportional to the *unnormalized transition weight*:
+$
+  pi_(v x) = alpha_(p, q) (r, x) dot mr(w_(v, x))
+$
+where $mr(w_(v, x))$ is the *static edge weight* between $v$ and $x$, and the search bias $alpha_(p,q)(r, x)$ depends on the *shortest-path distance $d_(r x) in {0, 1, 2}$* between the previous node $r$ and the candidate next node $x$, governed by two parameters $p$ and $q$:
 $
   alpha_(p, q) (r, x) = cases(
     1 / p & quad "if " d_(r x) = 0 quad ("return back to the previous node " x = r),
@@ -785,7 +800,7 @@ $
 $
 
 #figure(
-  caption: [Illustration of the biased 2nd-order random walk in `node2vec`. The walk just transitioned from $r$ (or $u$) to $v$ (or $w$) and evaluates candidate next steps based on shortest-path distance $d_(r x)$[cite: 169, 170, 171, 180].],
+  caption: [Illustration of the biased 2nd-order random walk in `node2vec`. The walk just transitioned from $r$ (or $u$) to $v$ (or $w$) and evaluates candidate next steps based on shortest-path distance $d_(r x)$.],
 )[
   #align(center)[
     #cetz.canvas(length: 1.0cm, padding: 0.25cm, {
@@ -831,16 +846,16 @@ $
       content(pos-u, text(size: 10pt)[$u$])
 
       circle(pos-r, radius: 0.42, fill: blue.lighten(80%), stroke: 1.4pt + blue.darken(20%))
-      content(pos-r, text(size: 10pt, weight: "bold")[$r$ ($s_1$)])
+      content(pos-r, text(size: 7pt, weight: "bold")[$r$ ($s_1$)])
 
       circle(pos-v, radius: 0.42, fill: green.lighten(65%), stroke: 1.5pt + black)
       content(pos-v, text(size: 10pt, weight: "bold")[$v$ ($w$)])
 
       circle(pos-x1, radius: 0.42, fill: red.lighten(80%), stroke: 1.4pt + red.darken(20%))
-      content(pos-x1, text(size: 10pt, weight: "bold")[$x_1$ ($s_2$)])
+      content(pos-x1, text(size: 7pt, weight: "bold")[$x_1$ ($s_2$)])
 
       circle(pos-x2, radius: 0.42, fill: orange.lighten(80%), stroke: 1.4pt + orange.darken(20%))
-      content(pos-x2, text(size: 10pt, weight: "bold")[$x_2$ ($s_3$)])
+      content(pos-x2, text(size: 7pt, weight: "bold")[$x_2$ ($s_3$)])
 
       circle(pos-x3, radius: 0.42, fill: orange.lighten(80%), stroke: 1.4pt + orange.darken(20%))
       content(pos-x3, text(size: 10pt, weight: "bold")[$x_3$])
@@ -848,19 +863,12 @@ $
   ]
 ]
 
-- *Return parameter $p$*: controls the probability of immediately backtracking to the previous node $r$[cite: 168, 170, 180, 294].
-  - Setting a *low value of $p$* ($p < min(1, q)$) yields a high weight $1/p$, encouraging the walk to backtrack and remain strictly local around the starting node (*BFS-like behavior*)[cite: 171, 180, 294].
-  - Setting a *high value of $p$* reduces $1/p$, preventing immediate backtracking[cite: 294].
-- *In-out ("walk away") parameter $q$*: controls the ratio between moving *inwards* (BFS) versus moving *outwards* (DFS)[cite: 168, 170, 180, 294].
-  - If *$q > 1$* (so $1/q < 1$), the walk is biased toward nodes close to $r$, yielding a *BFS-like microscopic view* (capturing *structural equivalence*, e.g., $p = 1, q = 2$)[cite: 172, 180, 294].
-  - If *$q < 1$* (so $1/q > 1$), the walk is biased to explore outward nodes far from $r$, yielding a *DFS-like macroscopic view* (capturing *homophily / community structure*, e.g., $p = 1, q = 0.5$)[cite: 171, 172, 180, 294].
-
-=== Summary of the node2vec Workflow
-
-The complete `node2vec` pipeline operates in three parallelizable steps with *linear time complexity*[cite: 173, 174]:
-1. Precompute the modified 2nd-order transition probabilities $pi_(v x)$ according to parameters $(p, q)$[cite: 173, 180].
-2. Simulate $r$ biased random walks of fixed length $l$ starting from each node $u in V$ to generate the node neighborhoods $N_S (u)$[cite: 173].
-3. Optimize the Skip-Gram log-likelihood objective via Stochastic Gradient Descent (SGD) to obtain the node embeddings, which can then be used for any downstream unsupervised (clustering, community detection) or supervised (node/edge classification) task[cite: 173, 174, 175, 176].
+- *Return parameter $p$*: controls the probability of immediately backtracking to the previous node $r$:
+  - Setting a *low value of $p$* ($p < min(1, q)$) yields a high weight $1/p$, encouraging the walk to backtrack and remain strictly local around the starting node (*BFS-like behavior*).
+  - Setting a *high value of $p$* reduces $1/p$, preventing immediate backtracking.
+- *In-out ("walk away") parameter $q$*: controls the ratio between moving *inwards* (BFS) versus moving *outwards* (DFS).
+  - If *$q > 1$* (so $1/q < 1$), the walk is biased toward nodes close to $r$, yielding a *BFS-like microscopic view* (capturing *structural equivalence*, e.g., $p = 1, q = 2$).
+  - If *$q < 1$* (so $1/q > 1$), the walk is biased to explore outward nodes far from $r$, yielding a *DFS-like macroscopic view* (capturing *homophily / community structure*, e.g., $p = 1, q = 0.5$).
 
 = Heterogeneous Graph Representation Learning: Het-node2vec
 
