@@ -874,10 +874,10 @@ $
 
 == Homogeneous vs. Heterogeneous Networks
 
-Standard algorithms like DeepWalk and node2vec are designed for *homogeneous graphs*, where all nodes and all edges are treated as belonging to a single uniform type[cite: 177]. However, most real-world biological and medical networks are *heterogeneous*[cite: 177]:
-- *Multiplex networks*: the same set of nodes connected across multiple layers representing different relationship types[cite: 177].
-- *Multi-layered networks*: distinct layers of different node types connected both within layers (intra-layer edges) and across layers (inter-layer edges)[cite: 177].
-- *Heterogeneous multigraphs / Biomedical Knowledge Graphs* (such as *HetioNet*, Himmelstein & Baranzini, 2015): integrate many distinct types of nodes (e.g., *Genes*, *Compounds/Drugs*, *Diseases*, *Side Effects*, *Pathways*, *Anatomy*, *Symptoms*, *Molecular Functions*) and multiple semantic edge types (e.g., *treats*, *causes*, *binds*, *upregulates*, *associates*, *interacts*)[cite: 177, 187].
+Standard algorithms like DeepWalk and node2vec are designed for *homogeneous graphs*, where all nodes and all edges are treated as belonging to a single uniform type. However, most real-world biological and medical networks are *heterogeneous*:
+- *Multiplex networks*: the same set of nodes connected across multiple layers representing different relationship types.
+- *Multi-layered networks*: distinct layers of different node types connected both within layers (intra-layer edges) and across layers (inter-layer edges).
+- *Heterogeneous multigraphs / Biomedical Knowledge Graphs*: integrate many distinct types of nodes (e.g., *Genes*, *Compounds/Drugs*, *Diseases*, *Side Effects*) and multiple semantic edge types (e.g., *treats*, *causes*, *binds*).
 
 == Het-node2vec: Node and Edge Type-Aware Random Walks
 
