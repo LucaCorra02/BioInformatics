@@ -78,9 +78,11 @@ The three main early-integration algorithms are *JIVE*, *intNMF*, and *MOFA*.
 
 === JIVE (Joint and Individual Variation Explained)
 
-The main idea is to see each data view divided in two _part_:
-- Some biological pattern can be shared over the differnt view of the data.
-- While other biological pattern are individual and specific for each view.
+#informally()[
+  The main idea is to see each data view divided in two _part_:
+  - Some biological pattern can be shared over the differnt view of the data.
+  - While other biological pattern are individual and specific for each view.
+]
 
 *JIVE* is a *PCA-based* extension that decomposes each data view $X_i$ ($i = 1, dots, k$) into three orthogonal components:
 $
@@ -100,6 +102,14 @@ To ensure identifiability, the joint and individual subspaces are constrained to
       $
         J = U Lambda V^T
       $
+      where:
+      - $U$: are the singular left vector, they indicate how the single feature combine to generate each principal component.
+      - $Lambda$: It's a diagonal matrix where the value on the diagonal are sorted ($lambda_1>=lambda_2>=0$). They indicate the importance of each component.
+      - $V$: The row of $V^t$ (collumn of $V$) are the new compressed coordinates of the patients in the new space
+
+      With rank-$r$ we keep only the first $r$ components (the most important once).
+
+
     - *For each view* $i = 1, dots, k$:
       - Subtract the joint structure to isolate view-specific residuals: $X_i^"Individual" = X_i - J_i$.
       - Estimate the individual structure $A_i$ by computing a *rank-$r_i$ truncated SVD* of the orthogonal projection:
@@ -111,26 +121,32 @@ To ensure identifiability, the joint and individual subspaces are constrained to
     - Reassemble $X^"Joint" = [(X_1^"Joint")^T, dots, (X_k^"Joint")^T]^T$.
 ]
 
-==== 2. intNMF (Integrative Non-Negative Matrix Factorization)
-*intNMF* applies Non-Negative Matrix Factorization to approximate each non-negative data matrix $X_(n times p_i)^i$ ($i = 1, dots, m$, where $n$ is the number of patients and $p_i$ the number of features in view $i$) as the product of a *shared non-negative patient factor matrix* $W_(n times k) >= 0$ and a *view-specific non-negative loading matrix* $H_(k times p_i)^i >= 0$:
+=== intNMF (Integrative Non-Negative Matrix Factorization)
+*intNMF* applies *Non-Negative Matrix* Factorization to approximate each non-negative data matrix $X_(n times p_i)^i$ ($i = 1, dots, m$, where $n$ is the number of patients and $p_i$ the number of features in view $i$) as the product of a *shared non-negative patient factor matrix* $W_(n times k) >= 0$ and a *view-specific non-negative loading matrix* $H_(k times p_i)^i >= 0$:
 $
   X_(n times p_i)^i approx W_(n times k) H_(k times p_i)^i, quad i = 1, dots, m
 $
-It minimizes the weighted reconstruction error across all $m$ views:
+- $H^i$ matrix it's specific for every visualization. Each row indicates a latent $k$ factor and how it's expressed.
+- $W$ matrix indicates how of the $k$ factor it's expressed in a specific patients. It's shared across all the views.
+
+These two matrix are constructed by minimizes the weighted *reconstruction error* across all $m$ views:
 $
   Q = min_(W >= 0, H^i >= 0) sum_(i=1)^m theta^i norm(X^i - W H^i)_2^2
 $
 where $theta^i$ are user-defined weights representing the *a priori* importance of each view. The optimization problem is solved via *Non-negative Alternating Least Squares (ALS)*: only $W$ needs to be initialized, and the algorithm alternates between fixing $W$ to solve for each $H^i$ and fixing $H^i$ to update $W$ via constrained least squares.
 
-==== 3. MOFA (Multi-Omics Factor Analysis) and Variational Inference
+=== MOFA (Multi-Omics Factor Analysis) and Variational Inference
 *MOFA* is a probabilistic Bayesian Generalized Matrix Factorization model:
 $
   X^((m)) = Z W^((m) T) + epsilon^((m)), quad m = 1, dots, M
 $
-where $X^((m)) in RR^(N times D_m)$ is the data matrix of view $m$, $Z in RR^(N times K)$ is the matrix of *shared latent factors* across all views, $W^((m)) in RR^(D_m times K)$ are the view-specific *weights/loadings* (equipped with sparsity-inducing priors so a factor can capture either variation shared across multiple views or variation specific to a single view), and $epsilon^((m))$ is view-specific noise (supporting Gaussian, Bernoulli, or Poisson likelihoods for continuous, binary, and count data).
+where:
+- $X^((m)) in RR^(N times D_m)$ is the data matrix of view $m$
+- $Z in RR^(N times K)$ is the matrix of *shared latent factors* across all views
+- $W^((m)) in RR^(D_m times K)$ are the view-specific *weights/loadings* (equipped with sparsity-inducing priors so a factor can capture either variation shared across multiple views or variation specific to a single view)
+- $epsilon^((m))$ is view-specific noise (supporting Gaussian, Bernoulli, or Poisson likelihoods for continuous, binary, and count data).
 
-*Mathematical Derivation of Variational Inference (VI) and ELBO in MOFA*:
-In Bayesian inference, given observed data $X$ and latent variables $Z$ (including parameters $theta$), Bayes' theorem gives the posterior distribution:
+*Mathematical Derivation of Variational Inference (VI) and ELBO in MOFA*: In Bayesian inference, given observed data $X$ and latent variables $Z$ (including parameters $theta$), Bayes' theorem gives the posterior distribution:
 $
   p(Z | X) = (p(X | Z) p(Z)) / (p(X)) = (p(X, Z)) / (integral p(X, Z) dif Z)
 $
@@ -165,34 +181,77 @@ $
 
 In *Intermediate Integration*, a separate unimodal PSN is constructed for each data modality using an appropriate similarity measure; these networks are then fused into a single *integrated PSN* prior to clustering or classification.
 
-1. *SNF (Similarity Network Fusion — Wang et al., Nature Methods, 2014)*:
-  - Builds a pairwise patient similarity matrix for each view using a scaled exponential Euclidean (Gaussian) kernel:
-    $
-      W(i, j) = exp(- (rho(x_i, x_j)^2) / (mu epsilon_(i j)))
-    $
-  - Defines a *global normalized similarity matrix* $P$ (with $P(i, i) = 1/2$ to avoid numerical instability, and $P(i, j) = W(i, j) / (2 sum_(k != i) W(i, k))$ for $j != i$) and a *local normalized similarity matrix* $S$ restricted to the $k$-nearest neighbors $N_i$ ($S(i, j) = W(i, j) / (sum_(k in N_i) W(i, k))$ if $j in N_i$, and $0$ otherwise).
-  - Performs *kernel alignment via iterative message passing (diffusion)* across views:
-    $
-      P_(t+1)^((1)) = S^((1)) times P_t^((2)) times (S^((1)))^T, quad P_(t+1)^((2)) = S^((2)) times P_t^((1)) times (S^((2)))^T
-    $
-    Element-wise, $P_(t+1)^((1))(i, j) = sum_(k in N_i) sum_(l in N_j) S^((1))(i, k) P_t^((2))(k, l) S^((1))(j, l)$, meaning similarity information between $i$ and $j$ in view $1$ is propagated only if their local neighborhoods $N_i$ and $N_j$ are similar in view $2$. After convergence, the fused network is used for spectral clustering or label propagation.
+=== Similarity Network Fusion (SNF)
 
-2. *NEMO (Neighborhood-based Multi-Omics clustering — Rappoport & Shamir, 2019)*:
-  - Computes a relative similarity matrix per omics view based on radial basis kernels restricted to local neighborhoods, and averages them across views. Crucially, NEMO can handle *partial multi-omics datasets* (where some patients lack certain views) as long as every pair of patients shares at least one common measured omics layer.
+*Similarity Network Fusion (SNF)* is the reference *intermediate (model-based) integration* algorithm. Instead of merging raw feature matrices in input space, SNF constructs an independent Patient Similarity Network (PSN) for each data modality (view) and iteratively fuses them into a single consensus network through a non-linear *message-passing (diffusion) process*.
 
-3. *netDx (Supervised PSN Integration — Pai et al., 2019)*:
-  - A *supervised* model-integration algorithm for patient classification. For each data type (clinical, gene expression, metabolome, mutations) and each patient class (e.g., high risk vs. low risk), netDx uses cross-validation to score, select, and weight only the PSNs (features/pathways) that are *predictive of that specific class*. The selected PSNs are integrated into a single network, and unseen patients are classified based on their relative diffusion similarity to known classes.
+==== Unimodal Similarity Matrix Construction ($W$)
+Suppose we have $n$ patients measured across $M$ data views (for simplicity, let $M = 2$, e.g., view $(1) =$ mRNA expression and view $(2) =$ DNA methylation). For each view, SNF computes a *pairwise patient similarity* matrix $W in RR^(n times n)$ using a *scaled exponential Euclidean (Gaussian) kernel*:
+$
+  W(i, j) = exp(- (rho(x_i, x_j)^2) / (mu epsilon_(i j)))
+$
+where $rho(x_i, x_j)$ is the Euclidean distance between patients $x_i$ and $x_j$ in that view, $mu$ is a hyperparameter, and $epsilon_(i j)$ is a local scaling factor (based on the average distance between $x_i, x_j$ and their $k$-nearest neighbors) that adapts the kernel width to local data density.
 
-4. *MSNE (Multiple Similarity Network Embedding — Xu et al., 2021)*:
-  - Builds multiple unimodal similarity networks (e.g., mRNA, miRNA, methylation) and stacks them as a multi-layer network.
-  - Performs *Random Walks with Lévy flights* across the networks (allowing the walker to either step to a neighbor within the same omics layer or *jump across layers* to another omics view for the same sample).
-  - Feeds the sampled multi-view node sequences into a *Skip-Gram* model to learn low-dimensional patient embeddings for cancer subtyping.
+==== Global ($P$) and Local ($S$) Normalized Matrices
+From each similarity matrix $W^((v))$, SNF derives two distinct normalized matrices that separate *global topology* from *reliable local neighborhoods*:
+
+1. *Global Normalized Similarity Matrix ($P$)*: captures the full pairwise similarities across *all* patients in the graph, with diagonal self-similarities fixed to $1/2$ and off-diagonal entries normalized so each row sums to $1$:
+  $
+    P(i, j) = cases(
+      (W(i, j)) / (2 sum_(k != i) W(i, k)) & quad "if " j != i,
+      1 / 2 & quad "if " j = i
+    )
+  $
+2. *Local Normalized Similarity Matrix ($S$ — Sparse Kernel)*: retains edges *only* for the $k$-nearest neighbors $N_i$ of each patient $i$, setting all weaker connections to $0$:
+  $
+    S(i, j) = cases(
+      (W(i, j)) / (sum_(k in N_i) W(i, k)) & quad "if " j in N_i,
+      0 & quad "otherwise"
+    )
+  $
+  #note()[
+    Weak similarity edges between distant patients are unreliable and noisy; only the strongest local connections ($j in N_i$) can be trusted to propagate information across networks.
+  ]
+
+==== Iterative Message Passing (Cross-Network Diffusion)
+Starting from $P_(t=0)^((1)) = P^((1))$ and $P_(t=0)^((2)) = P^((2))$, SNF iteratively updates the global similarity matrix of each view by diffusing the global similarities of the *other* view through its own local neighborhood matrix $S$:
+$
+  P_(t+1)^((1)) & = S^((1)) times P_t^((2)) times (S^((1)))^T \
+  P_(t+1)^((2)) & = S^((2)) times P_t^((1)) times (S^((2)))^T
+$
+*(If $M > 2$ views are present, $P_t^((2))$ is replaced by the average of the global matrices of all other views: $1/(M-1) sum_(v != m) P_t^((v))$).*
+
+#note(title: "Intuitive Meaning of the SNF Update Equation")[
+  Writing out the matrix multiplication for a single pair of patients $(i, j)$ in view $1$ reveals how the diffusion works:
+  $
+    P_(t+1)^((1))(i, j) = sum_(k in N_i) sum_(l in N_j) S^((1))(i, k) dot P_t^((2))(k, l) dot S^((1))(j, l)
+  $
+  Suppose that we want to know how two patient $i$ and $j$ are similar in the first view (mRNA):
+  - Take a best-friend $k$ of the patient $i$ in the first view: $S^1(i,k)$
+  - Take a best-friend $l$ of the patient $j$ in the first view: $S^1(j,l)$
+  - Now we want to know how much this two patients are similar, we check the second view: $P^2(k,l)$. If the best friend of $i$ and $j$ in the first view are also similar in the second view, the link between $i$ and $j$ become even stronger in the first view
+
+
+
+
+  This cross-diffusion has three key effects on the network topology:
+  1. *Noise removal*: weak, isolated edges that are not supported by local neighborhoods in any view quickly vanish to zero
+  2. *Edge reinforcement*: similarities supported consistently across multiple omics views reinforce each other and become stronger
+  3. *Complementary signal preservation*: a very strong edge present in only *one* omics view is preserved if the local neighborhoods of the two patients are tightly connected.
+]
+
+==== Convergence and Final Consensus PSN
+After $T$ iterations (until convergence, where the networks align into a shared topology), the final fused Patient Similarity Network is obtained by averaging the diffused global matrices:
+$
+  P^("fused") = 1 / 2 (P_T^((1)) + P_T^((2)))
+$
+The resulting integrated matrix $P^("fused")$ can then be used for unsupervised patient subtype stratification (e.g., via Spectral Clustering) or semi-supervised outcome prediction (as in *MP-Net*).
 
 === Late Integration (Output-Data / Consensus Fusion)
 
 In *Late Integration*, unimodal PSNs are built and analyzed (clustered or classified) *completely independently* for each data modality. The separate outputs are then combined at the very end using consensus aggregation or meta-models:
-- *PINSplus* (Perturbation Clustering for data INtegration and disease Subtyping, Nguyen et al., 2018): perturbs each omics data view by adding Gaussian noise to find stable patient partitions within each view, and then constructs a cross-view agreement matrix to identify consensus tumor subtypes.
-- *SUMO* (Subtyping Multi-Omics data, Sienkiewicz et al., 2022): builds unimodal patient similarity networks and performs *joint symmetric Non-Negative Matrix Tri-Factorization* on the multiplexed similarity matrices to extract consensus molecular subtypes.
+- *PINSplus* (Perturbation Clustering for data INtegration and disease Subtyping): perturbs each omics data view by adding Gaussian noise to find stable patient partitions within each view, and then constructs a cross-view agreement matrix to identify consensus tumor subtypes.
+- *SUMO*: builds unimodal patient similarity networks and performs *joint symmetric Non-Negative Matrix Tri-Factorization* on the multiplexed similarity matrices to extract consensus molecular subtypes.
 
 = Deep Graph Representation Learning: Graph Neural Networks (GNNs)
 
@@ -200,7 +259,7 @@ In *Late Integration*, unimodal PSNs are built and analyzed (clustered or classi
 
 === Recap of Node Embedding: Encoder-Decoder Framework
 
-The goal of node embedding is to map each node $v in V$ to a low-dimensional vector $bold(z)_v in RR^d$ such that geometric similarity in the embedding space approximates topological similarity in the original graph. This involves two key components:
+The goal of node embedding is to map each node $v in V$ to a low-dimensional vector $bold(z)_v in RR^d$ such that *geometric similarity* in the embedding space *approximates topological similarity* in the original graph. This involves two key components:
 1. *Encoder*: a function $"ENC": V arrow.r RR^d$ that maps node $v$ to its embedding:
   $
     "ENC"(v) = bold(z)_v in RR^d
@@ -230,9 +289,9 @@ To overcome the limitations of shallow encoders, *Graph Neural Networks (GNNs)* 
 Assume we are given a graph $G = (V, E)$ with:
 - $V$: the vertex set.
 - $bold(A)$: the binary (or weighted) adjacency matrix.
-- $bold(X) in RR^(m times |V|)$: a matrix of *node features* (e.g., gene expression profiles, categorical clinical attributes, molecular atom descriptors, or structural topological indicators/one-hot vectors if no external features exist).
+- $bold(X) in RR^(m times |V|)$: a matrix of *node features* (e.g., gene expression profiles, categorical clinical attributes, molecular atom descriptors).
 
-*Core Intuition (Neighborhood Aggregation)*: a node's representation is generated by iteratively aggregating and transforming information ("messages") from its local graph neighborhood using neural networks:
+*Core Intuition (Neighborhood Aggregation)*: a node's representation is generated *by iteratively aggregating and transforming information* ("messages") *from its local graph neighborhood* using neural networks:
 - Every target node $v in V$ defines its own *unique tree-structured computation graph* determined by unfolding its $K$-hop network neighborhood around $v$.
 - Nodes have embeddings at each layer $k in {0, 1, dots, K}$:
   - The *Layer-0 embedding* of node $u$ is simply its input feature vector: $bold(h)_u^0 = bold(x)_u$.
@@ -341,9 +400,11 @@ In general, the embedding at layer $k+1$ is computed by combining the embeddings
 $
   bold(h)_v^((k+1)) = f("COMB"({bold(h)_u^((k)) | u in N(v)}, bold(h)_v^((k))))
 $
-Because the neighbors $N(v)$ of a node have *no natural ordering*, the aggregation function must be *permutation invariant* (symmetric), such as an element-wise mean, sum, or maximum.
+#note()[
+  Because the neighbors $N(v)$ of a node have *no natural ordering*, the aggregation function $f$ must be *permutation invariant* (symmetric), such as an element-wise mean, sum, or maximum.
+]
 
-In the *Basic GNN approach*, we average the neighbor messages and apply a neural network layer:
+In the *Basic GNN approach*, we *average the neighbor messages* and apply a neural network layer:
 1. *Initialize Layer 0* with node features:
   $
     bold(h)_v^0 = bold(x)_v, quad forall v in V
@@ -353,10 +414,13 @@ In the *Basic GNN approach*, we average the neighbor messages and apply a neural
     bold(h)_v^k = sigma(bold(W)_k sum_(u in N(v)) (bold(h)_u^(k-1)) / (|N(v)|) + bold(B)_k bold(h)_v^(k-1))
   $
   where:
-  - $sum_(u in N(v)) bold(h)_u^(k-1) / |N(v)|$ is the *average of the neighbors' previous-layer embeddings*.
+  - $sum_(u in N(v)) bold(h)_u^(k-1) / (|N(v)|)$ is the *average of the neighbors' previous-layer embeddings*.
+
   - $bold(W)_k$ is a *trainable weight matrix* for neighborhood transformation at layer $k$.
+
   - $bold(B)_k$ is a *trainable weight matrix* for the node's own previous-layer embedding $bold(h)_v^(k-1)$ (acting as a *self-embedding* transformation).
   - $sigma$ is a non-linear activation function (e.g., $"ReLU"$ or $tanh$).
+
 3. *Final Output Embedding* after $K$ layers of neighborhood aggregation:
   $
     bold(z)_v = bold(h)_v^K
@@ -369,15 +433,20 @@ To train the shared aggregation matrices $bold(W)_k$ and $bold(B)_k$ ($k = 1, do
 1. *Unsupervised Training* (using only the graph structure):
   We optimize the exact same log-likelihood objective used in `DeepWalk` / `node2vec` (or graph factorization / negative sampling) so that nodes co-occurring in random walks $N_S (u)$ have similar GNN embeddings:
   $
-    max_(bold(W)_k, bold(B)_k) sum_(u in V) [ -log Z_u + sum_(n_i in N_S (u)) bold(z)_(n_i)^T bold(z)_u ], quad "where " Z_u = sum_(v in V) exp(bold(z)_u^T bold(z)_v)
+    max_(bold(W)_k, bold(B)_k) sum_(u in V) [ mg(-log Z_u) + sum_(n_i in mr(N_S (u))) bold(z)_(n_i)^T bold(z)_u ], quad "where " Z_u = sum_(v in V) exp(bold(z)_u^T bold(z)_v)
   $
+  where:
+  - $mr(N_S (u))$: is the group of neighboroud of node $u$. The algorithm want to maximize the sum of the similarity between node $u$ and it's neighbors
+  - $mg(Z_u)$: it's a normalization factor. Compute the similarity between node $u$ and the rest node of the graph. Since is $-log Z_u$ we want to *minimize $Z_u$*: Move the vector for node $u$ away from the vectors of all the random nodes in the graph with which it has no connection.
 
 2. *Supervised Training* (end-to-end for a downstream task like node classification, e.g., classifying a node as "human vs. bot" or "healthy vs. diseased"):
   We minimize the binary *Cross-Entropy Loss* over labeled training nodes:
   $
     cal(L) = - sum_(v in V_"train") [ y_v log(sigma(bold(z)_v^T bold(theta))) + (1 - y_v) log(1 - sigma(bold(z)_v^T bold(theta))) ]
   $
-  where $y_v in {0, 1}$ is the true node class label, $bold(theta)$ is a vector of classification weights, and $sigma$ is the sigmoid function.
+  where $y_v in {0, 1}$ is the true node class label, $bold(theta)$ is a vector of classification weights, and $sigma$ is the sigmoid function. The formula act in this way:
+  - *Case A* (The node is positive, $y_v = 1$): The second half of the formula within the square brackets becomes zero (because $1 - 1 = 0$). Only $log(sigma(z_v^T theta))$ remains. To minimize the error, the GNN is compelled to push the sigmoid probability as close to $1$ as possible.
+  - *Case B* (The node is negative, $y_v = 0$): The first half becomes zero (because it is multiplied by $0$). Only $log(1 - sigma(z_v^T theta))$ remains. The GNN is compelled to push the probability as close to $0$ as possible.
 
 #note(title: "Why GNNs Have Inductive Capability")[
   Because the *exact same aggregation parameters $bold(W)_k$ and $bold(B)_k$ are shared across all nodes* in the graph, the number of model parameters is *sublinear in $|V|$* (in fact, independent of $|V|$). This gives GNNs full *inductive capability*:
@@ -389,9 +458,9 @@ To train the shared aggregation matrices $bold(W)_k$ and $bold(B)_k$ ($k = 1, do
 
 Different GNN architectures differ in *how they aggregate and update messages* ("what goes inside the aggregation box").
 
-=== 1. Graph Convolutional Networks (GCNs — Kipf & Welling, ICLR 2017)
+=== Graph Convolutional Networks
 
-Kipf and Welling's *GCN* introduces two key modifications to the basic neighborhood aggregation rule:
+*GCN* introduces two key modifications to the basic neighborhood aggregation rule:
 $
   bold(h)_v^k = sigma(bold(W)_k sum_(u in N(v) union {v}) (bold(h)_u^(k-1)) / (sqrt(|N(u)| |N(v)|)))
 $
@@ -399,14 +468,19 @@ Comparing GCN to the basic GNN formulation:
 1. *More parameter sharing (single weight matrix)*: instead of having two separate matrices $bold(W)_k$ (for neighbors) and $bold(B)_k$ (for self-embedding), GCN includes $v$ itself in the summation ($u in N(v) union {v}$, equivalent to adding self-loops to the adjacency matrix $tilde(A) = A + I$) and shares the *exact same transformation matrix $bold(W)_k$* for both self and neighbor embeddings.
 2. *Symmetric per-neighbor degree normalization*: instead of dividing by the simple average $|N(v)|$, each neighbor $u$'s message is normalized by the geometric mean of the degrees $sqrt(|N(u)| |N(v)|)$ (derived from the symmetric normalized Laplacian $tilde(D)^(-1/2) tilde(A) tilde(D)^(-1/2)$). This *down-weights high-degree hub neighbors*, preventing hubs from dominating the aggregation and empirically yielding superior performance.
 
-=== 2. GraphSAGE (Hamilton et al., NeurIPS 2017)
+#note()[
+  A hub is a node with a significantly higher number of connections (degree) than the average node in the network.
+]
+
+=== GraphSAGE
 
 *GraphSAGE* (*SAmple and aggreGatE*) generalizes the aggregation step and preserves the node's own identity via concatenation:
 $
   bold(h)_v^k = sigma([ bold(W)_k dot "AGG"({bold(h)_u^(k-1), forall u in N(v)}), bold(B)_k bold(h)_v^(k-1) ])
 $
 Two main differences distinguish GraphSAGE from simple neighborhood aggregation:
-1. *Concatenation ($[ dot , dot ]$) instead of summation*: rather than summing the neighbor aggregation and the self-embedding $bold(B)_k bold(h)_v^(k-1)$, GraphSAGE *concatenates* them into a single vector, ensuring the node's own features are never washed out by its neighbors.
+1. *Concatenation ($[ dot , dot ]$) instead of summation*: rather than summing the neighbor aggregation and the self-embedding $bold(B)_k bold(h)_v^(k-1)$, GraphSAGE *concatenates* them into a single vector, ensuring the *node's own features are never washed out by its neighbors*.
+
 2. *Generalized differentiable aggregation function ($"AGG"$)*: any differentiable function mapping a set of vectors to a single vector can be used:
   - *Mean aggregator*: takes the element-wise weighted average of neighbors:
     $
@@ -421,7 +495,7 @@ Two main differences distinguish GraphSAGE from simple neighborhood aggregation:
       "AGG"_"LSTM" = "LSTM"([bold(h)_u^(k-1), forall u in pi(N(v))])
     $
 
-=== 3. Gated Graph Neural Networks (GGNNs — Li et al., 2016) & MPNNs
+=== Gated Graph Neural Networks & MPNNs
 
 Standard GCNs and GraphSAGE are typically shallow (*only 2 to 3 layers deep*). If we try to stack $10+$ or $20+$ layers to propagate information across large graph diameters, two problems arise:
 - *Overfitting* due to too many layer-specific parameters.
@@ -439,8 +513,12 @@ Standard GCNs and GraphSAGE are typically shallow (*only 2 to 3 layers deep*). I
       bold(h)_v^k = "GRU"(bold(h)_v^(k-1), bold(m)_v^k)
     $
 
-#note(title: "Generalization: Message-Passing Neural Networks (MPNNs — Gilmer et al., ICML 2017)")[
-  Gilmer et al. unified almost all spatial GNN architectures (especially for quantum chemistry and molecular graphs) under the general *Message-Passing Neural Network (MPNN)* framework, which also natively incorporates *edge features* $bold(e)_(u, v)$:
+    A GRU (Gated Recurrent Unit) is a special type of "*memory cell*." It is called "gated" because it contains gates—mathematical mechanisms based on sigmoid functions that learn to *decide what to remember and what to forget*. When a GRU receives the previous state of a node along with new information from its neighbors, its gates effectively ask:
+    - How much of this new information from the neighbors is actually useful?
+    - How much of my previous state should I keep intact to maintain my identity, and how much can I discard because it has become obsolete?
+
+#note(title: "Generalization: Message-Passing Neural Networks")[
+  Gilmer unified almost all spatial GNN architectures (especially for quantum chemistry and molecular graphs) under the general *Message-Passing Neural Network (MPNN)* framework, which also natively incorporates *edge features* $bold(e)_(u, v)$:
   1. *Message step*:
     $
       bold(m)_v^k = sum_(u in N(v)) M_k (bold(h)_u^(k-1), bold(h)_v^(k-1), bold(e)_(u, v))
@@ -449,10 +527,12 @@ Standard GCNs and GraphSAGE are typically shallow (*only 2 to 3 layers deep*). I
     $
       bold(h)_v^k = U_k (bold(h)_v^(k-1), bold(m)_v^k)
     $
-  where $M_k$ is any differentiable message function (e.g., an MLP) and $U_k$ is any state update function (e.g., a GRU or concatenation + non-linearity).
+  where: 
+  - $M_k$ is any differentiable message function (e.g., an MLP)
+  - $U_k$ is any state update function (e.g., a GRU or concatenation + non-linearity)
 ]
 
-=== 4. Graph Attention Networks (GATs — Veličković et al., ICLR 2018)
+=== Graph Attention Networks
 
 In GCN and mean-pooling GraphSAGE, all neighbors are weighted either equally or purely by their static node degree. However, *some neighbors are much more informative or important than others*.
 
