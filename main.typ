@@ -56,3 +56,4 @@
 #part("Machine Learining and AI applications to Bioinformatics")
 #include "chapters/L6-pt2.typ"
 #include "chapters/L8.typ"
+#include "chapters/L10.typ"
