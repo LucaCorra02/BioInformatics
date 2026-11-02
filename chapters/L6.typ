@@ -1,0 +1,316 @@
+#import "../template.typ": *
+
+= Deep Learning
+
+Deep learning models are neural networks with multiple layers. They can learn complex hierarchical representations of data and have proven successful across a wide range of applications, including genomic medicine and computational biology.
+
+The basic building block of a neural network is the *neuron* (inspired by the biological neuron and formalized in early models such as the *perceptron*), which computes a *weighted sum* of its inputs and applies a *nonlinear activation function*:
+$
+  "Weighted sum" & = z = sum_(i=1)^(n) w_i x_i + b \
+    "Activation" & = y = f(z)
+$
+where $x_i$ are the inputs, $w_i$ are the synaptic weights, $b$ (often denoted as $w_0$) is the bias term, and $f$ is the activation function (e.g., step function, sigmoid, or ReLU).
+
+The weights are learned during training by minimizing an error (or loss) function $E$ using *backpropagation* and an optimization algorithm, such as *stochastic gradient descent (SGD)*. During backpropagation, we compute the gradient of the loss function with respect to each weight $w_i$ using the chain rule, and update the weights according to a learning rate $eta$:
+$
+  (delta E) / (delta w_i) = mr((delta E) / (delta y)) * mb((delta y) / (delta z)) * mg((delta z) / (delta w_i))
+$
+where:
+- $mr((delta E) / (delta y))$ quantifies the error with respect to the output of the specific neuron. If the neuron is in the output layer, it depends directly on the difference between the predicted and true values. If it is in a hidden layer, it is computed recursively as a weighted sum of the errors propagated backward from the neurons in the next layer.
+
+- $mb((delta y) / (delta z))$ is the derivative of the activation function $f'(z)$. It measures how much the neuron's output changes in response to a change in its internal potential $z$.
+
+- $mg((delta z) / (delta w_i))$ is the derivative of the weighted sum with respect to the weight $w_i$ (which equals the corresponding input $x_i$). It measures how much the pre-activation input $z$ changes with respect to that specific weight.
+
+Once the gradient is computed, each weight is updated in the direction opposite to the gradient:
+$
+  Delta w_i = -eta (delta E) / (delta w_i), quad w_i <- w_i + Delta w_i
+$
+
+Deep fully connected neural networks (Multi-Layer Perceptrons, or MLPs) can suffer from the *$mr("vanishing-gradient")$* and *$mr("exploding-gradient")$* problems:
+- *Vanishing gradient*: if the gradients become *too small* as they are propagated backward through many layers, the weights in the earlier layers are barely updated, and the model may fail to learn.
+- *Exploding gradient*: if the gradients become *too large*, the weight updates become excessively large, leading to numerical instability and divergence during training.
+
+#note()[
+  The *ReLU* (Rectified Linear Unit) activation function is defined as $f(x) = max(0, x)$:
+
+  #figure()[
+    #align(center)[
+      #cetz.canvas(length: 0.75cm, padding: 0.25cm, {
+        import cetz.draw: *
+
+        let origin = (4.0, 1.0)
+        let x-end = (8.0, 1.0)
+        let y-end = (4.0, 5.0)
+
+        // Coordinate axes.
+        line(origin, x-end, stroke: (paint: black, thickness: 0.8pt))
+        line(origin, y-end, stroke: (paint: black, thickness: 0.8pt))
+        line(x-end, (7.7, 1.12), stroke: (paint: black, thickness: 0.8pt))
+        line(y-end, (3.88, 4.7), stroke: (paint: black, thickness: 0.8pt))
+
+        // The two branches of ReLU: zero for x < 0 and y = x for x >= 0.
+        line((1.0, 1.0), origin, stroke: (paint: teal, thickness: 2pt))
+        line(origin, (7.0, 4.0), stroke: (paint: teal, thickness: 2pt))
+        circle(origin, radius: 0.09, fill: teal, stroke: (paint: teal, thickness: 0.8pt))
+
+        content((7.35, 0.55), text(size: 9pt)[$x$])
+        content((3.45, 4.65), text(size: 9pt)[$f(x)$])
+        content((3.7, 0.55), text(size: 8pt)[$0$])
+
+        content((2.8, 3.8), text(size: 8pt)[$f(x) = x$])
+        content((1.55, 1.25), text(size: 8pt)[$f(x) = 0$])
+      })
+    ]
+  ]
+  ReLU helps *prevent saturation* for positive inputs. Its derivative is $1$ for positive values ($x > 0$) and $0$ for negative values ($x < 0$). Since the derivative $mb((delta y) / (delta z))$ is constantly equal to $1$ for positive inputs, it helps mitigate the vanishing-gradient problem. However, it can lead to the *dying ReLU* problem, where neurons become permanently inactive and stop learning if their inputs consistently fall into the negative region.
+]
+
+== CNN (Convolutional Neural Network)
+
+In a Convolutional Neural Network (CNN), neurons in a layer are only *locally connected* to small regions of the previous layer, unlike in a fully connected neural network (FNN/MLP) where every unit is connected to all units in the preceding layer. Furthermore, *padding* can be applied to preserve the spatial dimensions of the feature maps and allow the network to properly process values near the borders of the input.
+
+#theorem(title: "Convolution")[
+  Given an input $x$ and a kernel (or filter) $w$, the convolution operation produces a feature map $s$ by sliding the kernel over the input and computing a weighted sum at each position. For each $a in A$ where $A$ is the set of all valid positions of the kernel over the input, the convolution is defined as:
+  $
+    s(t) = integral_(a in A) x(a) w(t-a)
+  $
+  this is the continuous convolution. In the discrete case, the integral is replaced by a sum:
+  $
+    s(t) = sum_(a in A) x(a) w(t-a)
+  $
+  we can see the convolution as a linear operator that transforms the input $x$ into the output $s$ by applying the kernel $w$ across all valid positions. The kernel acts as a feature detector, capturing local patterns in the input data.
+]
+
+Since images and spatial data are typically represented as two-dimensional matrices, the 2D discrete convolution of an input $I$ with a kernel $K$ is written as a sum over rows and columns:
+$
+  S(i,j) = (I * K)(i,j) = sum_m sum_n I(m,n) K(i-m, j-n)
+$
+
+#note()[
+  Convolution is *commutative*: $I * K = K * I$, meaning we can equivalently write:
+  $
+    S(i,j) = (K * I)(i,j) = sum_m sum_n I(i-m, j-n) K(m,n)
+  $
+  In the discrete mathematical definition, the kernel is effectively flipped relative to the input because as the indices $m$ and $n$ increase, the indices into the kernel $(i-m, j-n)$ decrease.
+]
+
+#figure(
+  caption: [Example of 2D discrete convolution (without kernel flipping) with a $2 times 2$ kernel sliding over a $3 times 4$ input.],
+)[
+  #align(center)[
+    #cetz.canvas(length: 0.85cm, padding: 0.2cm, {
+      import cetz.draw: *
+
+      // --- INPUT MATRIX (3x4) ---
+      let in-x = 0.0
+      let in-y = 4.2
+      let cw = 0.85
+      let ch = 0.85
+      let gap = 0.1
+
+      content((in-x, in-y + 3 * (ch + gap) + 0.35), anchor: "west", text(size: 9pt)[Input $I(i+m, j+n)$])
+
+      let in-labels = (
+        ("a", "b", "c", "d"),
+        ("e", "f", "g", "h"),
+        ("i", "j", "k", "l"),
+      )
+
+      for r in range(3) {
+        for c in range(4) {
+          let x = in-x + c * (cw + gap)
+          let y = in-y + (2 - r) * (ch + gap)
+          rect((x, y), (x + cw, y + ch), stroke: 0.7pt + black)
+          content((x + cw / 2, y + ch / 2), text(size: 9pt)[$#in-labels.at(r).at(c)$])
+        }
+      }
+
+      // Highlight box around the top-left 2x2 patch (a, b, e, f)
+      let hl-pad = 0.08
+      let hl-x1 = in-x - hl-pad
+      let hl-y1 = in-y + (ch + gap) - hl-pad
+      let hl-x2 = in-x + 2 * cw + gap + hl-pad
+      let hl-y2 = in-y + 3 * ch + 2 * gap + hl-pad
+      rect((hl-x1, hl-y1), (hl-x2, hl-y2), stroke: (paint: teal, thickness: 1.2pt))
+
+      // --- KERNEL MATRIX (2x2) ---
+      let k-x = 4.8
+      let k-y = 4.65
+
+      content((k-x, k-y + 2 * (ch + gap) + 0.35), anchor: "west", text(size: 9pt)[Kernel $K(m, n)$])
+
+      let k-labels = (
+        ("w", "x"),
+        ("y", "z"),
+      )
+
+      for r in range(2) {
+        for c in range(2) {
+          let x = k-x + c * (cw + gap)
+          let y = k-y + (1 - r) * (ch + gap)
+          rect((x, y), (x + cw, y + ch), stroke: 0.7pt + black)
+          content((x + cw / 2, y + ch / 2), text(size: 9pt)[$#k-labels.at(r).at(c)$])
+        }
+      }
+
+      // Outer box around the 2x2 Kernel
+      let khl-x1 = k-x - hl-pad
+      let khl-y1 = k-y - hl-pad
+      let khl-x2 = k-x + 2 * cw + gap + hl-pad
+      let khl-y2 = k-y + 2 * ch + gap + hl-pad
+      rect((khl-x1, khl-y1), (khl-x2, khl-y2), stroke: (paint: teal, thickness: 1.2pt))
+
+      // --- OUTPUT MATRIX (2x3) ---
+      let out-x = 0.4
+      let out-y = 0.0
+      let ow = 2.65
+      let oh = 1.45
+      let ogap-x = 0.35
+      let ogap-y = 0.55
+
+      content((out-x + 1.8, out-y + 2 * oh + ogap-y + 0.35), anchor: "west", text(size: 9pt)[Output])
+      content((out-x - 0.9, out-y + oh + ogap-y / 2), text(size: 10pt)[$S(i, j)$])
+
+      let out-exprs = (
+        (
+          $a w + b x + \ e y + f z$,
+          $b w + c x + \ f y + g z$,
+          $c w + d x + \ g y + h z$,
+        ),
+        (
+          $e w + f x + \ i y + j z$,
+          $f w + g x + \ j y + k z$,
+          $g w + h x + \ k y + l z$,
+        ),
+      )
+
+      let out-coords = (
+        ("(1,1)", "(1,2)", "(1,3)"),
+        ("(2,1)", "(2,2)", "(2,3)"),
+      )
+
+      for r in range(2) {
+        for c in range(3) {
+          let x = out-x + c * (ow + ogap-x)
+          let y = out-y + (1 - r) * (oh + ogap-y)
+          rect((x, y), (x + ow, y + oh), stroke: 0.7pt + black)
+          content((x + ow / 2, y + oh / 2), text(size: 8.5pt)[#out-exprs.at(r).at(c)])
+          content((x + ow / 2, y - 0.25), text(size: 8pt, fill: gray.darken(40%))[$#out-coords.at(r).at(c)$])
+        }
+      }
+
+      // Outer highlight box around top-left Output cell (1,1)
+      let ohl-x1 = out-x - hl-pad
+      let ohl-y1 = out-y + oh + ogap-y - hl-pad
+      let ohl-x2 = out-x + ow + hl-pad
+      let ohl-y2 = out-y + 2 * oh + ogap-y + hl-pad
+      rect((ohl-x1, ohl-y1), (ohl-x2, ohl-y2), stroke: (paint: teal, thickness: 1.2pt))
+
+      // --- ARROWS ---
+      // Arrow from Input 2x2 patch to Output (1,1) left side
+      let mid-in-y = (hl-y1 + hl-y2) / 2
+      let mid-out-y = (ohl-y1 + ohl-y2) / 2
+      line(
+        (hl-x1, mid-in-y),
+        (hl-x1 - 0.5, mid-in-y),
+        (hl-x1 - 0.5, mid-out-y),
+        (ohl-x1, mid-out-y),
+        stroke: (paint: teal, thickness: 1pt),
+        mark: (end: ">", fill: teal),
+      )
+
+      // Arrow from Kernel bottom to Output (1,1) top side
+      let mid-k-x = (khl-x1 + khl-x2) / 2
+      let target-out-x = out-x + ow * 0.35
+      let mid-way-y = (khl-y1 + ohl-y2) / 2 - 0.1
+      line(
+        (mid-k-x, khl-y1),
+        (mid-k-x, mid-way-y),
+        (target-out-x, mid-way-y),
+        (target-out-x, ohl-y2),
+        stroke: (paint: teal, thickness: 1pt),
+        mark: (end: ">", fill: teal),
+      )
+    })
+  ]
+]
+
+
+
+=== Cross-correlation
+
+Deep learning libraries usually implement *cross-correlation* rather than strict mathematical convolution, meaning the kernel slides over the input *without* being flipped. In two dimensions, it is defined as:
+$
+  S(i,j) = (I * K)(i,j) = sum_m sum_n I(i+m, j+n) K(m,n)
+$
+
+#example()[
+  Consider the one-dimensional cross-correlation formula:
+  $
+    S(i) = sum_m I(i+m) K(m)
+  $
+
+  Suppose we have the following 1D input $I$ and kernel $K$:
+  - $I = [1, 3, 1, 2, 1]$
+  - $K = [1, 2, 1]$
+
+  To compute $S[0]$, we let the index $m$ range from $0$ to $2$, since the kernel has length $3$:
+  $
+    S[0] = I[0] dot K[0] + I[1] dot K[1] + I[2] dot K[2] = 1 dot 1 + 3 dot 2 + 1 dot 1 = 8
+  $
+  To compute $S[1]$, we shift the kernel to the right by $1$ position (stride $1$):
+  $
+    S[1] = I[1] dot K[0] + I[2] dot K[1] + I[3] dot K[2] = 3 dot 1 + 1 dot 2 + 2 dot 1 = 7
+  $
+  In the next step, we shift the kernel to position $2$:
+  $
+    S[2] = I[2] dot K[0] + I[3] dot K[1] + I[4] dot K[2] = 1 dot 1 + 2 dot 2 + 1 dot 1 = 6
+  $
+]
+
+=== Sparse connectivity
+
+In a classical FNN (or MLP), every neuron is connected to every neuron in the previous layer, resulting in a very large number of connections and parameters, as well as high computational complexity.
+
+In a convolutional layer, we achieve *sparse connectivity* (or sparse interactions) by making the *kernel smaller than the input*: each neuron is connected only to a small local region of the previous layer, whose size is determined by the kernel dimensions. Consequently, the layer requires far fewer parameters and operations, while stacking multiple layers allows the network to combine low-level local features into higher-level, increasingly global abstractions.
+9
+#note()[
+  Sparse connectivity does not prevent the network from capturing global information. Through successive convolutional layers, the *receptive field* of a neuron in a deeper layer grows, eventually covering a large portion—or the entirety—of the original input.
+]
+
+=== Parameter sharing
+
+In a standard FNN, each *weight is used exactly once* to compute the output of a layer, as it is tied to a specific connection between two neurons.
+
+In a convolutional layer, we have *parameter sharing*: the exact same kernel weights are applied across all spatial positions of the input. For instance, if a 2D kernel has size $3 times 3$, the network learns only $9$ weights per input channel (plus typically one bias term per output channel), rather than learning a separate set of weights for every spatial location.
+
+This drastically reduces memory usage and the total number of parameters, and makes the representation *equivariant to translation*: shifting the input shifts the resulting feature map in the same way.
+
+=== Pooling layer
+
+*Pooling layers* introduce a degree of local *translation invariance* and spatial abstraction. They reduce the spatial dimensions of a feature map by replacing the output at a given location with a summary statistic of the nearby outputs, such as the maximum value (*max pooling*) or the average value (*average pooling*) within a local window.
+
+In a typical CNN block, a nonlinear activation function (usually ReLU, acting as a detector stage) is applied immediately after the linear convolution operation, and the pooling operation is applied afterward to downsample the resulting activations.
+
+=== Architecture and Training
+
+A typical CNN architecture is composed of a sequence of stages (or layers):
+- *Input layer*: receives the raw input, such as an image, a 1D biological sequence, or another spatially structured tensor.
+- *Convolutional layer* (convolution stage): applies a set of learnable kernels to the input to extract local features and produce feature maps (affine transformation).
+- *Activation layer* (detector stage): applies a nonlinear activation function, usually ReLU, element-wise to the feature maps.
+- *Pooling layer* (pooling stage): downsamples the feature maps to reduce spatial dimensions and provide invariance to small local shifts.
+
+During training, *backpropagation* (adapted to account for weight sharing and pooling operations) computes the gradients of the loss function with respect to the kernel weights. An optimization algorithm then updates the parameters:
+- Pure *Stochastic Gradient Descent (SGD)* computes the gradient and updates the weights using a single training example at a time.
+- *Mini-batch gradient descent* computes the gradient over a small subset (mini-batch) of training examples at each step. Mini-batch updates are computationally much more efficient and provide more stable gradient estimates than single-example updates, enabling fast training of large deep networks over multiple iterations or epochs.
+
+=== Regularization
+
+Regularization techniques are employed to improve generalization on unseen data and reduce *overfitting*. Common strategies include *weight decay* ($L_1$ and $L_2$ norm regularization) and *dropout*:
+- *Weight decay* penalizes large parameter values by adding a regularization term (such as the $L_2$ norm or $L_1$ norm of the weights) to the loss function, encouraging simpler models.
+
+- *Dropout* randomly sets a fraction of neuron activations to zero during each training step. It is typically applied to hidden layers rather than the final output layer. At inference (test) time, dropout is disabled and the activations are scaled appropriately to account for the full network being active.
+
+  Dropout prevents the *co-adaptation* of neurons (forcing units to learn robust features independently) and can be interpreted as training an approximate *ensemble of exponentially many subnetworks* that share parameters.
+
