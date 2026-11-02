@@ -881,23 +881,23 @@ Standard algorithms like DeepWalk and node2vec are designed for *homogeneous gra
 
 == Het-node2vec: Node and Edge Type-Aware Random Walks
 
-*Het-node2vec* (Valentini et al., *arXiv*, 2021; implemented in the *GRAPE* library, Cappelletti et al., *Nature Computational Science*, 2023) extends node2vec to *heterogeneous multigraphs* $G = (V, E, phi, psi)$, where[cite: 179, 186, 233]:
-- $phi: V -> Sigma_V$ maps each node $v in V$ to its *node type* $phi(v) in Sigma_V$[cite: 186].
-- $psi: E -> Sigma_E$ maps each edge $e in E$ to its *edge type* $psi(e) in Sigma_E$[cite: 186].
+*Het-node2vec* extends node2vec to *heterogeneous multigraphs* $G = (V, E, phi, psi)$, where:
+- *$phi: V -> Sigma_V$* maps each node $v in V$ to its *node type* $phi(v) in Sigma_V$
+- *$psi: E -> Sigma_E$* maps each edge $e in E$ to its *edge type* $psi(e) in Sigma_E$
 
-Het-node2vec introduces a 2nd-order random walk that is *node-type and edge-type aware* by adding two new stochastic *switching parameters* on top of $p$ and $q$[cite: 181, 184, 187]:
-- *Node-switching parameter $s$* (introduced in *HeNHoE-2vec* — Heterogeneous Nodes, Homogeneous Edges): controls the propensity of the random walk to switch from the current node type $phi(v)$ to a different node type $phi(x) != phi(v)$ (multiplying the transition weight by $1/s$)[cite: 182, 184, 187].
-- *Edge-switching parameter $e$* (introduced in *HoNHeE-2vec* — Homogeneous Nodes, Heterogeneous Edges): controls the propensity of the random walk to switch from the previous edge type $psi(r, v)$ to a different edge type $psi(v, x) != psi(r, v)$ (multiplying the transition weight by $1/e$)[cite: 183, 184, 187].
+Het-node2vec introduces a 2nd-order random walk that is *node-type and edge-type aware* by adding two new stochastic *switching parameters* on top of $p$ and $q$:
+- *Node-switching parameter $s$*: controls the propensity of the random walk to switch from the current node type $phi(v)$ to a different node type $phi(x) != phi(v)$ (multiplying the transition weight by $1/s$)
+- *Edge-switching parameter $e$*: controls the propensity of the random walk to switch from the previous edge type $psi(r, v)$ to a different edge type $psi(v, x) != psi(r, v)$ (multiplying the transition weight by $1/e$)
 
 === The Complete HeNHeE-2vec (Het-node2vec) Transition Rule
 
-Combining both switching mechanisms yields *HeNHeE-2vec* (Heterogeneous Nodes, Heterogeneous Edges)[cite: 184, 186]. Given a walk at node $v$ coming from node $r$, the unnormalized transition probability to move to neighbor $x$ is[cite: 186]:
+Combining both switching mechanisms yields *HeNHeE-2vec* (Heterogeneous Nodes, Heterogeneous Edges). Given a walk at node $v$ coming from node $r$, the unnormalized transition probability to move to neighbor $x$ is:
 $
   P(X(t+1) = x | X(t) = v, X(t-1) = r) = pi_(v x) = gamma_(p, q, s, e) (r, v, x) dot w_(v, x)
 $
-where the bias factor $gamma_(p, q, s, e)$ is defined by checking whether the edge type changes ($psi(r, v) == psi(v, x)$) and whether the node type changes ($phi(x) == phi(v)$), combined with the shortest-path topological distance $d_(r, x) in {0, 1, 2}$[cite: 184, 186]:
+where the bias factor *$gamma_(p, q, s, e)$* is defined by checking whether the edge type changes ($psi(r, v) == psi(v, x)$) and whether the node type changes ($phi(x) == phi(v)$), combined with the shortest-path topological distance $d_(r, x) in {0, 1, 2}$:
 
-1. *Same edge type ($psi(r, v) = psi(v, x)$) and same node type ($phi(x) = phi(v)$)*[cite: 186]:
+1. *Same edge type ($psi(r, v) = psi(v, x)$) and same node type ($phi(x) = phi(v)$)*:
   $
     gamma = cases(
       1 / p & "if " d_(r, x) = 0,
@@ -905,7 +905,7 @@ where the bias factor $gamma_(p, q, s, e)$ is defined by checking whether the ed
       1 / q & "if " d_(r, x) = 2,
     )
   $
-2. *Same edge type ($psi(r, v) = psi(v, x)$) and different node type ($phi(x) != phi(v)$)* (penalized by $1/s$)[cite: 182, 186]:
+2. *Same edge type ($psi(r, v) = psi(v, x)$) and different node type ($phi(x) != phi(v)$)* (penalized by $1/s$):
   $
     gamma = cases(
       1 / (p s) & "if " d_(r, x) = 0,
@@ -921,7 +921,7 @@ where the bias factor $gamma_(p, q, s, e)$ is defined by checking whether the ed
       1 / (q e) & "if " d_(r, x) = 2,
     )
   $
-4. *Different edge type ($psi(r, v) != psi(v, x)$) and different node type ($phi(x) != phi(v)$)* (penalized by $1/(s e)$)[cite: 184, 186]:
+4. *Different edge type ($psi(r, v) != psi(v, x)$) and different node type ($phi(x) != phi(v)$)* (penalized by $1/(s e)$):
   $
     gamma = cases(
       1 / (p s e) & "if " d_(r, x) = 0,
@@ -930,9 +930,8 @@ where the bias factor $gamma_(p, q, s, e)$ is defined by checking whether the ed
     )
   $
 
-#note()[
-  *Attention Mechanism Interpretation*[cite: 181, 185, 187]:
-  Parameters $s$ and $e$ act as a topological *attention mechanism* that concentrates the random walk on specific semantic parts of a heterogeneous biomedical knowledge graph[cite: 181, 185]:
-  - *Low values of $s$* ($s < 1 ==> 1/s > 1$) encourage the walker to jump across *different types of nodes* (inter-layer exploration), whereas high values of $s$ keep the walk within a single node type[cite: 185, 187].
-  - *Low values of $e$* ($e < 1 ==> 1/e > 1$) encourage the walker to traverse *different types of edges* (multi-relational exploration)[cite: 185, 187].
+#note(title: "Attention Mechanism Interpretation")[
+  Parameters $s$ and $e$ act as a topological *attention mechanism* that concentrates the random walk on specific semantic parts of a heterogeneous biomedical knowledge graph:
+  - *Low values of $s$* ($s < 1 ==> 1/s > 1$) encourage the walker to jump across *different types of nodes* (inter-layer exploration), whereas high values of $s$ keep the walk within a single node type.
+  - *Low values of $e$* ($e < 1 ==> 1/e > 1$) encourage the walker to traverse *different types of edges* (multi-relational exploration.
 ]
