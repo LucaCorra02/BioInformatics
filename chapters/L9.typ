@@ -1,201 +1,22 @@
 #import "../template.typ": *
 
-#import "../template.typ": *
+= From Unimodal to Multi-Modal PSN Integration
 
-= Patient Similarity Networks and Multi-View Data Integration
+Single-omics analyses suffer from "blind-spot" limitations. Because of *patient heterogeneity*, patients with the same clinical diagnosis may respond very differently to the same therapy; *Precision Medicine* requires integrating multi-omics views to stratify patients and tailor personalized treatments.
 
-== Clinical Outcome Prediction: Inductive vs. Transductive Paradigms
+== Taxonomies of Multi-Modal Data Integration
 
-A primary goal in biomedical machine learning is *clinical outcome prediction* (e.g., predicting drug response, prognosis, diagnosis, disease recurrence, or patient risk stratification) from multimodal and longitudinal biomedical data. However, real-world clinical and omics datasets present major methodological challenges:
-- *High-Dimensional Small Sample Size (HDSSS)*: the number of measured features $m$ (e.g., tens of thousands of genes or epigenetic marks) is vastly larger than the number of available patients $n$ ($m >> n$).
-- *Missing data*: clinical records and multi-omics cohorts suffer from both sporadic missing values and completely missing modalities (views).
-- *Multimodality*: integrating heterogeneous sources (genomics, transcriptomics, proteomics, clinical laboratory tests, radiological imaging, and longitudinal records).
-- *Interpretability and Explainability*: to achieve translational impact in clinical practice, predictive models cannot act as black boxes; clinicians require transparent explanations of *why* a specific prediction or risk score was assigned.
-
-State-of-the-art methods for clinical outcome prediction follow two distinct learning paradigms:
-
-1. *Inductive Supervised Models*:
-  - *Induction* is the process of reasoning from observed training cases to infer *general rules* (a predictive model), which are subsequently applied to unseen test cases:
-    $
-      "Training Data" arrow.r "Learning Algorithm (Infer Rules)" arrow.r "General Model" arrow.r "Test Predictions"
-    $
-  - Classical examples include Support Vector Machines (SVMs), Random Forests (RFs), Gradient Boosting (XGBoost), Penalized Generalized Linear Models (`glmnet`), and Feedforward Neural Networks.
-  - *$mr("Limitation")$*: inductive models treat each patient as an independent sample vector and *do not explicitly account for mutual relationships or similarities among individuals*.
-
-2. *Transductive Semi-Supervised Models (Network-based)*:
-  - *Transduction* is the process of reasoning directly from observed, specific training cases to specific test cases by observing all data (both labeled and unlabeled samples) beforehand.
-  - In *Network Medicine*, transduction is realized through *Patient Similarity Networks (PSNs)* constructed from subjects' biomolecular and clinical profiles.
-  - *$mg("Advantage")$*: transductive PSN models explicitly leverage both the *pairwise topological relationships among patients* and the distribution of *unlabeled data* during inference, offering a naturally visualizable and interpretable clinical framework.
-
-#example()[
-  *Intuitive comparison: Inductive ($k$-NN) vs. Transductive (Network-based) classification*
-  Suppose we have a set of patients where only two extreme groups are labeled: red nodes ($A, B$) and green nodes ($C, D$), while all intermediate nodes ($1, dots, 14$) are unlabeled.
-  - An *inductive $k$-NN classifier* looks only at the Euclidean distance to the *labeled* training points ($A, B, C, D$), completely ignoring the density and connectivity of the unlabeled points in between.
-  - A *transductive network-based model* propagates labels step-by-step across the edges connecting all nodes (labeled and unlabeled), respecting the global geometry and community structure of the patient network.
-]
-
-== Case Study: Explainable Inductive ML for COVID-19 Risk Prediction
-
-Before moving to transductive PSNs, a representative example of an explainable *inductive* workflow is the early assessment of *COVID-19 risk prediction* in Emergency Departments (Casiraghi et al., *IEEE Access*, 2020; Esposito et al., *Reports in Medical Imaging*, 2021).
-
-- *Dataset and Clinical Task*: $301$ COVID-19 positive patients admitted to the Emergency Department, described by heterogeneous variables: patient demographics (age, sex), clinical symptoms and comorbidities (dyspnea, respiratory failure, hypertension, diabetes, neoplasia), biochemical/laboratory blood tests (CRP, lymphocytes, white blood cells, platelets, ALT, arterial oxygen saturation $"PaO"_2 / "FiO"_2$ and $"SpO"_2$), and qualitative Chest X-Ray (CXR) radiological severity scores.
-- *Target*: binary stratification into *Low/Moderate Risk* ($214$ patients: treated at home or hospitalized without intubation/death) versus *Severe Risk* ($87$ patients: intubated or deceased).
-
-=== Handling Missing Clinical Data (MCAR and Imputation)
-
-Statistical testing (Jamshidian and Jalal's test for homoscedasticity and multivariate normality via the `MissMech` package) confirmed that missing values in the clinical cohort were *Missing Completely At Random (MCAR)*. Two main imputation strategies were compared:
-
-1. *Multiple Imputation (e.g., MICE with Predictive Mean Matching `PMM-mice` or Random Forests `RF-mice`)*:
-  - Instead of filling in a single value, the incomplete dataset is imputed $M$ times (e.g., $M = 5$) to generate $M$ distinct complete datasets.
-  - Each of the $M$ imputed datasets is analyzed independently to obtain a model parameter estimate $hat(theta)_j$ and its within-imputation variance $W_j$ ($j = 1, dots, M$).
-  - Finally, the $M$ estimates are combined into a single pooled result using *Rubin's Rules*, and statistical significance is assessed via the *Wald test*, accounting for both within-imputation and between-imputation variance.
-
-2. *Non-parametric Single Imputation via `missForest`* (Stekhoven & Bühlmann, *Bioinformatics*, 2012):
-  - Iteratively trains a Random Forest on observed values to predict missing values for both continuous and categorical (mixed-type) variables.
-  - Empirically, `missForest` achieved the *lowest between-imputation variance* and preserved feature importance rankings consistently with `miceRF`.
-
-=== Validation Pipeline and Explainability via Associative Trees
-
-To avoid any data leakage during model evaluation, the inductive pipeline embeds all learning steps inside an *External 10-fold Stratified Cross-Validation*:
-1. *Pre-screening via CXR cut-off*: on each training fold, ROC analysis determines an optimal Chest X-Ray (`Radio.Score`) threshold to immediately filter out clearly mild/moderate cases.
-2. *Feature Selection via Boruta*: on the remaining uncertain cases in the training fold, the *Boruta* wrapper algorithm (using an internal 5-fold cross-validation) selects all statistically relevant features by comparing real feature importance against randomized "shadow features" in a Random Forest (identifying key drivers such as $"SpO"_2$, $"PaO"_2 / "FiO"_2$, white blood cells, lymphocytes, CRP, number of comorbidities, and age).
-3. *Model Induction and Rule Extraction (Associative Trees)*:
-  - A *Random Forest (RF)* classifier is trained on the selected features (outperforming XGBoost, SVMs, `glmnet`, and feedforward neural networks).
-  - Because an ensemble of ratusan of trees is not directly readable by emergency physicians, *rule extraction* is performed: individual decision paths from the trees in the forest are extracted, simplified, pruned, and merged into a single *Associative Tree* (a hierarchical decision list of `IF-THEN-ELSE` rules: $"Condition"_1 arrow.r "Severe Risk"; "else Condition"_2 arrow.r dots$).
-  - This provides doctors with an actionable, transparent clinical checklist.
-
-== Unimodal Patient Similarity Networks and the P-Net Algorithm
-
-=== From Biomarker Networks to Patient Similarity Networks
-
-In *Network Medicine*, biological and clinical systems are modeled at multiple interconnected layers:
-- *Biomolecular / Biomarker Networks (e.g., PPI networks)*:
-  - *Nodes*: genes or proteins.
-  - *Edges*: functional or physical similarity/interactions among biomarkers.
-  - *Tasks*: identify and prioritize disease biomarkers, discover novel molecular interactions.
-- *Patient Similarity Networks (PSNs)*:
-  - *Nodes*: patients $V = {p_1, p_2, dots, p_n}$.
-  - *Edges*: pairwise similarity between patients' biomolecular or clinical profiles.
-  - *Tasks*: clinical outcome/phenotype prediction (e.g., recurrence vs. no recurrence after 5 years) and patient subtype stratification.
-
-#note(title: "Formal Graph Notation")[
-  - An *unweighted undirected graph* is a pair $G = (V, E)$, where $V$ is the vertex set ($|V| = n$) and $E subset.eq V times V$ is the edge set, represented by a binary symmetric adjacency matrix $A in {0, 1}^(n times n)$ with $A_(i j) = 1$ if $(i, j) in E$ and $0$ otherwise.
-  - A *weighted undirected graph* is a triplet $G = (V, E, W)$, where $W in RR_(>= 0)^(n times n)$ is a real-valued symmetric *similarity (or affinity) matrix* whose entry $w_(i j)$ quantifies the connection strength between nodes $i$ and $j$.
-]
-
-=== The P-Net Algorithm: Step-by-Step Pipeline
-
-*P-Net* (Gliozzo et al., *Scientific Reports*, 2020) is a transductive, semi-supervised network algorithm for clinical outcome prediction on unimodal data (such as a single gene-expression view). It consists of *five main steps*:
-
-==== Step 1 & 2: Data Collection, Cleaning, and Dimensionality Reduction
-Each patient $p_i$ ($i = 1, dots, n$) is characterized by an $m$-dimensional feature vector (e.g., gene expression profile), forming a patient matrix $M in RR^(m times n)$ (or $n times m$). Since omics data is plagued by the *HDSSS* problem ($m >> n$), rigorous preprocessing is applied:
-1. *Data filtering and cleaning*:
-  - Discard features (genes) with *low variance* across patients (uninformative).
-  - Discard redundant features by filtering out pairs with *high pairwise correlation*.
-  - Discard features with an excessive fraction of missing values, and *impute* the remaining sporadic missing values.
-2. *Dimensionality Reduction (DR)* to mitigate the curse of dimensionality:
-  - *Supervised Feature Selection* (must be performed *strictly on the training set* to avoid data leakage!):
-    - *Univariate methods*: statistical hypothesis tests (t-test, Wilcoxon), correlation tests, Mutual Information (MI), Maximal Information Coefficient (MIC).
-    - *Multivariate methods*: Minimum Redundancy Maximum Relevance (mRMR), Recursive Feature Elimination/Addition (RFE), Genetic Algorithms, Random Forest importance / Boruta, or Lasso/Elastic-Net regularized generalized linear models.
-  - *Unsupervised Feature Selection / Extraction*: univariate/multivariate unsupervised filters or latent space projections (guided by *Intrinsic Dimensionality*, see Section 1.4).
-
-==== Step 3: PSN Construction and Graph Kernel Projection
-1. *Initial Weighted PSN Construction ($W$)*: from the cleaned, reduced patient matrix $M$, compute the pairwise similarity matrix $W in RR^(n times n)$ between all pairs of patients using a suitable similarity metric:
-  - *Inner product (Linear kernel)*: $W(x_i, x_j) = x_i^T x_j$
-  - *Pearson correlation*: $W(x_i, x_j) = "corr"(x_i, x_j)$
-  - *Scaled Euclidean (Gaussian / RBF kernel)*: $W(x_i, x_j) = exp(- norm(x_i - x_j)^2 / (2 sigma^2))$
-2. *Projection into Kernel Space ($K$)*: to capture the *global topology* of the network rather than just direct 1-hop connections, the graph $W$ is projected into a high-dimensional Reproducing Kernel Hilbert Space (RKHS) via a *Graph Kernel*, specifically the *$p$-step Random Walk (RW) Kernel* (Smola & Kondor, 2003):
-  - The *1-step Random Walk Kernel* Gram matrix $K in RR^(n times n)$ is defined as:
-    $
-      K_"1-step" = (a - 1) I + D^(-1/2) W D^(-1/2)
-    $
-    where $I$ is the $n times n$ identity matrix, $D = "diag"(d_(1 1), dots, d_(n n))$ is the diagonal degree matrix with $d_(i i) = sum_j W_(i j)$, and $a > 1$ (or $alpha > 1$) is a real parameter that balances the probability of staying at the starting node versus stepping to a neighbor.
-  - The *$p$-step Random Walk Kernel* executes random walks of length $p$ by raising the 1-step matrix to the power $p$:
-    $
-      K = K_"p-step" = ((a - 1) I + D^(-1/2) W D^(-1/2))^p
-    $
-
-#note(title: "Why use a Graph Kernel on a PSN?")[
-  In the original input space, two patients $x_i$ and $x_j$ might not be direct neighbors (e.g., low direct similarity $W_(i j)$). However, the non-linear mapping $phi: cal(X) arrow.r cal(H)$ induced by the $p$-step Random Walk Kernel computes inner products $K(x_i, x_j) = < phi(x_i), phi(x_j) >$ that account for *both direct neighbors ($p = 1$) and indirect multi-step paths ($p >= 2$)* across the entire graph. Thus, patients that belong to the same topological cluster become close neighbors in the Hilbert space $cal(H)$ even if they were not directly linked in the original network.
-]
-
-==== Step 4: Filtering Weak Similarities via Leave-One-Out (LOO)
-Because raising the kernel matrix to the power $p$ densifies the graph (creating edges between almost all node pairs), weak kernel similarities introduce topological noise. P-Net applies an efficient *Leave-One-Out (LOO)* cross-validation procedure on the labeled training set to learn an optimal threshold (or top-$k$ cutoff) that zeroes out weak entries in $K$, producing a sparse *Filtered Kernel Matrix*.
-
-==== Step 5: Patient Scoring via Kernelized Score Functions
-Finally, each patient $i in V$ is assigned a continuous score $S: V arrow.r RR^+$ proportional to the likelihood of belonging to the target clinical phenotype/outcome class $C$ (where $V_C subset V$ denotes the subset of known *positive training patients* associated with phenotype $C$, and $V backslash V_C$ denotes the negative training patients).
-
-By leveraging the *RANKS* framework (Valentini et al., *Bioinformatics*, 2016), P-Net combines the *global network topology* (encoded in the $i$-th row $K_i$ of the kernel matrix $K$, with elements $k_(i j)$) with *local neighborhood aggregation* through six possible *Kernelized Score Functions*:
-
-#table(
-  columns: (1.3fr, 2.7fr),
-  align: (left + horizon, left + horizon),
-  stroke: 0.5pt + gray,
-  inset: 7pt,
-  [*Score Name*], [*Mathematical Formulation*],
-  [*1. Average ($S_"AV"$)*], [$ S_"AV" (i, K_i, V_C) = 1 / (|V_C|) sum_(j in V_C) k_(i j) $],
-  [*2. Nearest Neighbor ($S_"NN"$)*], [$ S_"NN" (i, K_i, V_C) = max_(j in V_C) k_(i j) $],
-  [*3. $k$-Nearest Neighbor ($S_"kNN"$)*],
-  [$ S_"kNN" (i, K_i, V_C) = 1 / (|I_k (i)|) sum_(j in I_k (i)) k_(i j) $\ where $I_k (i) = {j | j in V_C and "rank"(k_(i j)) <= k}$],
-
-  [*4. Total ($S_"TOT"$)*],
-  [$
-    S_"TOT" (i, K_i, V_C) = (sum_(j in V_C) k_(i j)) / (sum_(j in V_C) k_(i j) + sum_(j in V backslash V_C) k_(i j))
-  $],
-
-  [*5. Differential ($S_"Diff"$)*],
-  [$ S_"Diff" (i, K_i, V_C) = sum_(j in V_C) k_(i j) - sum_(j in V backslash V_C) k_(i j) $],
-
-  [*6. Differential Normalized ($S_"Dnorm"$)*],
-  [$
-    S_"Dnorm" (i, K_i, V_C) = (sum_(j in V_C) k_(i j) - sum_(j in V backslash V_C) k_(i j)) / (sum_(j in V_C) k_(i j) + sum_(j in V backslash V_C) k_(i j))
-  $],
-)
-
-#note()[
-  Notice that while $S_"AV"$, $S_"NN"$, and $S_"kNN"$ only measure similarity with respect to the positive patients $V_C$ (useful in one-class or positive-unlabeled settings), *Total ($S_"TOT"$)*, *Differential ($S_"Diff"$)*, and *Differential Normalized ($S_"Dnorm"$)* explicitly contrast the similarity to positive patients ($V_C$) against the similarity to negative patients ($V backslash V_C$).
-]
-
-== Guiding Dimensionality Reduction via Intrinsic Dimensionality (ID)
-
-When dealing with *HDSSS* multi-omics views (e.g., mRNA, miRNA, DNA methylation, protein expression in TCGA cancer cohorts), choosing *how* to reduce dimensionality and *how many* features/dimensions $d$ to retain is non-trivial.
-
-- *Intrinsic Dimensionality (ID)*: informally, the ID of a dataset is the minimum dimension of the latent space (manifold) onto which the data points can be projected via a smooth mapping without losing information (e.g., 3D points lying flat on a 2D sheet of paper have $"ID" = 2$).
-- *Block-ID Analysis* (Gliozzo et al., *Artificial Intelligence in Medicine*, 2024): by subsampling blocks of features of increasing size $L$ and estimating their ID (using the *TWO-NN estimator* $hat(d)_"twonn"$), we can plot the block-ID curve as a function of block dimension:
-  - In high-dimensional views like *mRNA* or *DNA methylation*, the block-ID curve rises and then hits a clear *plateau* at $L_p$ features (with cumulative mean ID value $"cum"(hat(d)_(L_p))$ and total standard deviation $sigma("cum"(hat(d)_(L_p)))$). A plateau indicates that adding more features beyond $L_p$ only introduces *redundancy and noise*.
-  - In smaller views like *miRNA* or *protein*, the curve keeps growing without reaching a plateau, meaning all features carry non-redundant information.
-
-This leads to a principled, automated decision workflow for each view $bold(X)$:
-1. *If Block-Analysis finds a plateau at $L_p$* (redundant/noisy features present):
-  - *If using Feature Selection (FS)*: apply unsupervised FS (e.g., *Iterative RCUR*, *Feature Clustering*, or *Entropy Filtering*) to select $L_p$ representative features.
-  - *If using Feature Extraction (FE) or (FS + FE)*: project the data (via *RPCA*, *Laplacian Eigenmaps*, *UMAP*, or *t-SNE*) to target dimension:
-    $
-      d = "cum"(hat(d)_(L_p)) + 3 times sigma("cum"(hat(d)_(L_p)))
-    $
-2. *If Block-Analysis does NOT find a plateau* (no redundancy; FS would discard salient biological information!):
-  - *Skip Feature Selection (FS)* completely.
-  - Perform Dimensionality Reduction *only via Feature Extraction (FE)*, projecting the view $bold(X)$ to target dimension guided by the global TWO-NN estimate:
-    $
-      d = hat(d)_"twonn" (bold(X)) + 3 times sigma(hat(d)_"twonn" (bold(X)))
-    $
-
-== From Unimodal to Multi-Modal PSN Integration
-
-Single-omics analyses suffer from "blind-spot" limitations (like the parable of the blind men touching different parts of an elephant: epigenomics, transcriptomics, proteomics, and metabolomics each observe only one stage of the Central Dogma of Molecular Biology). Because of *patient heterogeneity*, patients with the same clinical diagnosis may respond very differently to the same therapy; *Precision Medicine* requires integrating multi-omics views to stratify patients and tailor personalized treatments.
-
-=== Taxonomies of Multi-Modal Data Integration
-
-In the literature (Adali et al., 2018; Wu et al., 2019; Ritchie et al., 2015), dataset integration is first divided by *integration flow*:
+In the literature, dataset integration is first divided by *integration flow*:
 - *Horizontal integration* (on *multiset / homogeneous datasets*): integrating the *same* data modality (e.g., mRNA) measured across different cohorts or conditions.
 - *Vertical integration* (on *multimodal / heterogeneous datasets*): integrating *different* data modalities (e.g., methylation + mRNA + protein) measured on the *same* set of patients. Vertical integration is further split into *hierarchical-vertical* (multi-staged, modeling explicit regulatory cascades like $"methylation" arrow.r "mRNA" arrow.r "protein"$) and *parallel-vertical* (meta-dimensional analysis, treating views symmetrically).
 
-For *parallel-vertical integration on Patient Similarity Networks*, methods are categorized into three families according to *when* the fusion happens (Gliozzo et al., *Briefings in Bioinformatics*, 2022):
+For *parallel-vertical integration on Patient Similarity Networks*, methods are categorized into three families according to *when* the fusion happens:
 
 #figure(
   caption: [Categorization of multi-modal PSN integration methods: (1) Early / Input-data integration, (2) Intermediate / Model (PSN) integration, and (3) Late / Output-data integration.],
 )[
   #align(center)[
-    #cetz.canvas(length: 0.8cm, padding: 0.2cm, {
+    #cetz.canvas(length: 1.2cm, padding: 0.2cm, {
       import cetz.draw: *
 
       // 1. Early Integration
@@ -206,7 +27,7 @@ For *parallel-vertical integration on Patient Similarity Networks*, methods are 
       content((1.1, 3.4), text(size: 8pt)[Views $X^1, dots, X^m$])
       line((2.2, 3.4), (3.4, 3.4), mark: (end: ">", fill: black))
       rect((3.4, 3.0), (6.4, 3.8), radius: 0.1, fill: teal.lighten(85%), stroke: teal)
-      content((4.9, 3.4), text(size: 8pt)[*Fuse Data* (JIVE, intNMF, MOFA)])
+      content((4.9, 3.4), text(size: 7pt)[*Fuse Data* (JIVE, intNMF, MOFA)])
       line((6.4, 3.4), (7.6, 3.4), mark: (end: ">", fill: black))
       rect((7.6, 3.0), (10.0, 3.8), radius: 0.1, fill: blue.lighten(85%), stroke: blue)
       content((8.8, 3.4), text(size: 8pt)[Build Single PSN])
@@ -249,21 +70,30 @@ For *parallel-vertical integration on Patient Similarity Networks*, methods are 
   ]
 ]
 
-=== Early Integration (Input-Data Fusion & Joint Dimensionality Reduction)
+== Early Integration (Input-Data Fusion & Joint Dimensionality Reduction)
 
 In *Early Integration*, the multi-omics matrices $X^1, X^2, dots, X^m$ are projected into a *joint shared low-dimensional latent space* during pre-processing (often called *Multi-omics Joint Dimensionality Reduction, jDR*, decomposing each view as $X^i approx A^i times F$, where $F$ are shared sample factors and $A^i$ are view-specific metagene loadings). A single PSN is then built from the integrated latent coordinates.
 
-The three main early-integration algorithms are *JIVE*, *intNMF*, and *MOFA*:
+The three main early-integration algorithms are *JIVE*, *intNMF*, and *MOFA*.
 
-==== 1. JIVE (Joint and Individual Variation Explained — Lock et al., 2013)
-*JIVE* is a PCA-based extension that decomposes each data view $X_i$ ($i = 1, dots, k$) into three orthogonal components:
+=== JIVE (Joint and Individual Variation Explained)
+
+The main idea is to see each data view divided in two _part_:
+- Some biological pattern can be shared over the differnt view of the data.
+- While other biological pattern are individual and specific for each view.
+
+*JIVE* is a *PCA-based* extension that decomposes each data view $X_i$ ($i = 1, dots, k$) into three orthogonal components:
 $
   X_i = J_i + A_i + epsilon_i
 $
-where $J = [J_1^T, dots, J_k^T]^T$ is the low-rank *joint structure* shared across all views, $A_i$ is the low-rank *individual (view-specific) variation* unique to view $i$, and $epsilon_i$ is residual noise. To ensure identifiability, the joint and individual subspaces are constrained to be *mutually orthogonal* ($J A_i^T = 0$).
+where:
+- $J = [J_1^T, dots, J_k^T]^T$ is the low-rank *joint structure* shared across all views. Is the part of information shared across the views.
+- $A_i$ is the low-rank *individual (view-specific) variation* unique to view $i$
+- $epsilon_i$ is residual noise
 
-#example()[
-  *JIVE Iterative SVD Estimation Algorithm*:
+To ensure identifiability, the joint and individual subspaces are constrained to be *mutually orthogonal* ($J A_i^T = 0$).
+
+#note(title: "JIVE Iterative SVD Estimation Algorithm")[
   1. *Initialize*: $X^"Joint" = X = [X_1^T, dots, X_k^T]^T$.
   2. *Repeat until convergence*:
     - Estimate the joint matrix $J = [J_1^T, dots, J_k^T]^T$ by computing a *rank-$r$ truncated SVD* of $X^"Joint"$:
