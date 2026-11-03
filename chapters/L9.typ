@@ -527,7 +527,7 @@ Standard GCNs and GraphSAGE are typically shallow (*only 2 to 3 layers deep*). I
     $
       bold(h)_v^k = U_k (bold(h)_v^(k-1), bold(m)_v^k)
     $
-  where: 
+  where:
   - $M_k$ is any differentiable message function (e.g., an MLP)
   - $U_k$ is any state update function (e.g., a GRU or concatenation + non-linearity)
 ]
@@ -538,8 +538,10 @@ In GCN and mean-pooling GraphSAGE, all neighbors are weighted either equally or 
 
 *Graph Attention Networks (GATs)* augment GNNs with a *self-attention mechanism* that learns anisotropic, feature-dependent importance weights $alpha_(v, u)$ for every edge $(u, v)$:
 $
-  bold(h)_v^k = sigma(sum_(u in N(v) union {v}) alpha_(v, u) bold(W)^k bold(h)_u^(k-1))
+  bold(h)_v^k = sigma(sum_(u in N(v) union {v}) alpha_(v, u) mr(bold(W)^k bold(h)_u^(k-1)))
 $
+where $mr(bold(W)^k bold(h)_u^(k-1))$ is the message that comes from neighbor $u$, and $alpha_(v, u)$ is the *learned attention coefficient* that determines how much weight to give to neighbor $u$ when updating node $v$'s embedding.
+
 In the original GAT paper, the *attention coefficients $alpha_(v, u)$* are computed via a single-layer feedforward attention mechanism parameterized by a weight matrix $bold(Q)$ (or $bold(W)^k$) and a learnable attention vector $bold(a)$, normalized across $v$'s neighborhood via softmax:
 $
   alpha_(v, u) = (exp("LeakyReLU"(bold(a)^T [bold(Q) bold(h)_v, bold(Q) bold(h)_u]))) / (sum_(u' in N(v) union {v}) exp("LeakyReLU"(bold(a)^T [bold(Q) bold(h)_v, bold(Q) bold(h)_(u')])))
@@ -548,31 +550,29 @@ where $[bold(Q) bold(h)_v, bold(Q) bold(h)_u]$ denotes concatenation of the line
 
 == Subgraph and Whole-Graph Embeddings
 
-While previous methods generate *node-level embeddings* $bold(z)_u$, many biomedical tasks (such as *molecular property prediction*, where an entire chemical compound is a graph of atoms and bonds, or classifying a patient's pathway subnetwork) require a single embedding vector $bold(z)_S in RR^d$ for an entire *subgraph (or whole graph) $S$*.
+While previous methods generate *node-level embeddings* $bold(z)_u$, many biomedical tasks (such as *molecular property prediction*, where an entire chemical compound is a graph of atoms and bonds, or classifying a patient's pathway subnetwork) require a single *embedding vector* $bold(z)_S in RR^d$ for an entire *subgraph (or whole graph) $S$*.
 
 Three main approaches exist in the literature:
 
-1. *Approach 1: Sum or Average Pooling* (Duvenaud et al., *ICML*, 2016 — Molecular Fingerprints):
+1. *Approach 1: Sum or Average Pooling*:
   Run a standard GNN on the graph and simply sum (or average) the final node embeddings belonging to subgraph $S$:
   $
     bold(z)_S = sum_(v in S) bold(z)_v
   $
-2. *Approach 2: Virtual Node* (Li et al., *ICLR*, 2016):
-  Introduce a special *"virtual super-node"* connected via directed edges to all nodes in the subgraph $S$, and run a standard GNN. The final embedding of the virtual node serves as the subgraph embedding $bold(z)_S$.
-3. *Approach 3: Hierarchical Differentiable Pooling (`DiffPool` — Ying et al., NeurIPS 2018)*:
-  Instead of flat summation (which loses hierarchical structural motifs inside the graph), `DiffPool` learns to *hierarchically coarsen (cluster) the nodes* across layers:
+
+2. *Approach 2: Virtual Node*: Introduce a special *virtual super-node* connected via *directed edges to all nodes in the subgraph $S$*, and run a standard GNN. The final embedding of the virtual node serves as the subgraph embedding $bold(z)_S$.
+
+3. *Approach 3: Hierarchical Differentiable Pooling*: Instead of flat summation (which loses hierarchical structural motifs inside the graph), `DiffPool` learns to *hierarchically coarsen (cluster) the nodes* across layers:
   - Step 1: Run a GNN on the input graph to obtain node embeddings.
   - Step 2: Use a parallel GNN to learn a *soft clustering assignment matrix* (via softmax weights) that groups nodes into clusters, forming a smaller *"coarsened" super-node graph*.
   - Step 3: Run another GNN layer on the coarsened graph.
-  - Step 4: Repeat until the entire graph is pooled into a single representation for graph classification. *(Hard clustering variants also exist, e.g., Cangea et al., 2018; Gao et al., 2018).*
+  - Step 4: Repeat until the entire graph is pooled into a single representation for graph classification.
 
 = Applications of Graph Representation Learning to Network Medicine
 
 == Software Platforms for GRL and the GRAPE Library
 
-Several open-source frameworks support Graph Representation Learning, including *PyTorch Geometric (PyG)*, *Deep Graph Library (DGL)*, *OpenNE*, *CogDL*, *Dive into Graphs (DIG)*, *GraphVite*, *Graph-Learn*, and *Paddle Graph Learning (PGL)*.
-
-To address the massive scalability challenges of biomedical graphs (which often contain millions of nodes and tens of millions of heterogeneous edges), AnacletoLab developed *GRAPE* (*Graph Representation leArning, Predictions and Evaluation*, Cappelletti et al., *Nature Computational Science*, 2023).
+To address the massive scalability challenges of biomedical graphs (which often contain millions of nodes and tens of millions of heterogeneous edges), AnacletoLab developed *GRAPE* (*Graph Representation leArning, Predictions and Evaluation*).
 
 GRAPE is architected around two tightly integrated software modules:
 1. *Ensmallen* (written in *Rust* with Python bindings for extreme speed and low memory footprint):
@@ -585,43 +585,61 @@ GRAPE is architected around two tightly integrated software modules:
 
 == Biomedical Network Models and Knowledge Graphs
 
-Real-world biomedical networks are rarely simple homogeneous graphs. Following Bohyun et al. (2020) and Himmelstein et al. (2015, 2019), network models in Network Medicine are categorized into four structural levels:
+Real-world biomedical networks are *rarely simple homogeneous graphs*, in Network Medicine are categorized into four structural levels:
 
 1. *Homogeneous Network*: all nodes and all edges are treated equally as a single type, even if they biologically represent different entities.
-2. *Multiplex Network*: consists of multiple layers ($L_1, L_2, dots$) sharing the *exact same set of nodes* (e.g., the same set of proteins or patients), where each layer represents a different type of interaction or similarity, and vertical dashed edges link each node to its counterparts across layers.
+
+2. *Multiplex Network*: consists of multiple layers ($L_1, L_2, dots$) sharing the *exact same set of nodes* (e.g., the same set of proteins or patients), where *each layer represents a different type of interaction or similarity*, and vertical dashed edges link each node to its counterparts across layers.
+
 3. *Heterogeneous Multi-Layered Network (HMLN)*: consists of multiple layers where *each layer contains a distinct type of biological entity* (e.g., Layer 1: Diseases, Layer 2: Genes/Proteins, Layer 3: Chemicals/Drugs), with *intra-layer edges* representing within-domain similarity (disease-disease, gene-gene, chemical-chemical) and *inter-layer edges* representing cross-domain associations (gene-disease, drug-gene, drug-disease).
   - *General GRL Learning Framework on HMLNs*: takes the intra-layer similarity matrices and observed sparse inter-layer association matrices as input, learns *low-dimensional latent embeddings* for diseases, genes, and chemicals, and performs *matrix completion or supervised link prediction* to reconstruct complete association matrices.
 4. *Biomedical Knowledge Graphs (KGs / Meta-Graphs)*:
-  - Defined by Nicholson and Greene (2020) as *"a resource that integrates one or more expert-derived sources of information into a graph where nodes represent biomedical entities and edges represent semantic relationships between two entities."*
-  - A landmark example is *HetioNet* (Himmelstein & Baranzini, 2015, 2017), a meta-graph integrating heterogeneous entity types (*Gene*, *Compound*, *Disease*, *Anatomy*, *Symptom*, *Side Effect*, *Pharmacologic Class*, *Biological Process*, *Pathway*, *Cellular Component*, *Molecular Function*) connected by typed semantic edges (e.g., `Compound-treats-Disease`, `Compound-palliates-Disease`, `Compound-causes-SideEffect`, `Compound-binds/upregulates/downregulates-Gene`, `Disease-associates-Gene`, `Disease-localizes-Anatomy`, `Disease-presents-Symptom`).
-  - Another major example is the *COVID-19 Knowledge Graph* (`kg-covid-19`, Reese et al., 2020), which integrates ontologies (*GO*, *Mondo*, *HP*, *ChEBI*) with *UniProt*, *IntAct*, *STRING*, *DrugCentral*, *PharmGKB*, *TTD*, *ChEMBL*, and *CORD-19* literature to support drug repurposing against SARS-CoV-2.
+  - Defined as "a resource that *integrates* one or more expert-derived *sources of information into a graph* where nodes represent biomedical entities and edges represent semantic relationships between two entities
 
-=== Major Databases Populating Biomedical Knowledge Graphs
+    #example()[
+      A landmark example is *HetioNet* a meta-graph integrating heterogeneous entity types (*Gene*, *Compound*, *Disease*, ecc..) connected by typed semantic edges (e.g., `Compound-treats-Disease`, `Compound-palliates-Disease`, `Compound-causes-SideEffect`, `Compound-binds/upregulates/downregulates-Gene, ecc`)
 
-Biomedical KGs are populated via manual curation, automated text-mining, and high-throughput experimental pipelines from reference databases:
-- *Genes, Proteins, and PPIs*: *BioGRID* (genetic/proteomic interactions), *STRING* (known and predicted PPIs), *UniProt* (protein sequences and functional annotations), *IntAct* (molecular interactions), *InterPro* (protein families/domains), *Entrez-Gene* (NCBI gene annotations), *Human Protein Atlas (HPA)*.
-- *Drugs, Chemicals, and Targets*: *DrugBank* (drugs and targets), *ChEMBL* (bioactive molecules), *PharmGKB* (pharmacogenomics: drug-gene-variant-phenotype), *Comparative Toxicogenomics Database (CTD)* (chemical-gene-disease mappings), *SIDER* (drug side effects), *TTD* (Therapeutic Target Database), *SuperTarget*, *CARD* (Comprehensive Antibiotic Resistance Database).
-- *Diseases, Variants, and Pathways*: *OMIM* (Mendelian genotype-phenotype associations), *COSMIC* (somatic cancer mutations), *KEGG* and *Reactome* (metabolic and signaling pathways), *Gene Ontology (GO)* (Biological Process, Molecular Function, Cellular Component).
+      Another major example is the *COVID-19 Knowledge Graph*, which integrates ontologies (*GO*, *Mondo*, *HP*, *ChEBI*) with *UniProt*, *IntAct*, *STRING*, *DrugCentral*, *PharmGKB*, *TTD*, *ChEMBL*, and *CORD-19* literature to support drug repurposing against SARS-CoV-2.
+    ]
 
 == Multi-Scale Applications of GRL in Network Medicine
 
-Graph Representation Learning is applied across *four interconnected scales* in Network Medicine (Yi et al., *Briefings in Bioinformatics*, 2022):
+Graph Representation Learning is applied across *four interconnected scales* in Network Medicine.
 
-=== 1. Molecular Scale: Analysis of Chemical Compounds and Proteins
-- *Graph representation*: molecules and proteins are modeled as *molecular graphs* where *nodes are atoms* (or amino acid residues / surface patches) and *edges are chemical bonds* (or spatial 3D proximity).
+=== Molecular Scale: Analysis of Chemical Compounds and Proteins
+
+*Graph representation*: molecules and proteins are modeled as *molecular graphs* where *nodes are atoms* (or amino acid residues / surface patches) and *edges are chemical bonds* (or spatial 3D proximity).
+
 - *Tasks and representative methods*:
-  - *Molecular representation learning (Fingerprints)*: neural graph fingerprints via GCNs (Duvenaud et al., 2015), 3D rotation-invariant adaptive GCNs (`3DMol-Net`, Li et al., 2021), and geometric deep learning on protein molecular surfaces to decipher interaction fingerprints (`MaSIF`, Gainza et al., *Nature Methods*, 2020).
-  - *Molecular property prediction*: predicting quantum chemical properties, toxicity, and solubility via *Message-Passing Neural Networks (MPNNs)* (Gilmer et al., 2017) and spatial graph embeddings.
+  - *Molecular representation learning (Fingerprints)*: neural graph fingerprints via GCNs, 3D rotation-invariant adaptive GCNs, and geometric deep learning on protein molecular surfaces to decipher interaction fingerprints.
+  - *Molecular property prediction*: predicting quantum chemical properties, toxicity, and solubility via *Message-Passing Neural Networks (MPNNs)* and spatial graph embeddings.
 
-=== 2. Multi-Omics Scale: Genomics, Proteomics, and Transcriptomics
-- *Genomics graph analysis*: single-cell RNA-seq cell-network embedding (Li et al., 2017), disease-gene prioritization via random walks on heterogeneous multigraphs (Li & Li, 2012), and hybrid localized spectral graph convolutional filtering on gene-relation networks for *breast cancer subtype classification* (Rhee et al., 2018).
-- *Proteomics graph analysis*: multi-modal attributed network embedding integrating PPI topology and sequence attributes for *Automated Protein Function Prediction* (`Graph2GO`, Fan et al., 2020), and denoising PPI networks via *Variational Graph Auto-Encoders (VGAE)* to detect protein complexes (Yao et al., 2020).
-- *Transcriptomics graph analysis*: predicting *miRNA-disease* and *lncRNA-disease* associations using multi-view multichannel attention GCNs (Tang et al., 2021) and convolutional/variational autoencoders (Sheng et al., 2021).
+=== Multi-Omics Scale: Genomics, Proteomics, and Transcriptomics
+At this scale, GRL accelerates relational omics data analysis by modeling biomolecular interactions
 
-=== 3. Pharmaceutical Scale: Drug Discovery and Repositioning
-- *Drug-Target Interaction (DTI) prediction*: predicting novel bindings between drugs and proteins by deep-mining heterogeneous biomedical linked networks (Zong et al., 2017; `DTIGEMS+`, Thafar et al., 2020; end-to-end heterogeneous GRL, Peng et al., 2021).
-- *Drug-Disease association (Drug Repurposing)*: embedding MeSH headings and drug-disease networks via GRL and GCNs (`MeSHHeading2vec`, Guo et al., 2021; Sun et al., 2019).
-- *Drug-Drug Interaction (DDI) & Polypharmacy Side Effects*: modeling multi-relational drug-protein-side-effect networks with GCNs to predict whether taking two drugs simultaneously causes adverse polypharmacy side effects (*Decagon*, Zitnik, Agrawal & Leskovec, *Bioinformatics*, 2018), or combining KG embeddings with CNN-LSTMs / Attention GCNs (`AGCN`, Park et al., 2020).
+- *Genomics Graph Analysis*:
+  - *Graph Structure*: Nodes can represent individual cells (in scRNA-seq) or genes and diseases. Edges represent transcriptional similarity between cells or heterogeneous functional associations.
+  - *Task*: Node classification (e.g., clustering single cells by type, or classifying breast cancer subtypes based on gene-relation networks) and link prediction (e.g., prioritizing which genes are implicated in a disease via random walks).
 
-=== 4. Healthcare & Clinical Scale: Knowledge Graphs and EHRs
-- *Electronic Health Records (EHRs) and Clinical KGs*: learning health knowledge graphs from EHRs (Rotmensch et al., 2017), modeling the graphical structure of EHR visits, diagnoses, and treatments via *Graph Convolutional Transformers* (Choi et al., *AAAI*, 2020) and GNNs for disease prediction (Sun et al., 2021), and identifying disease treatment mechanisms across the *multiscale interactome* connecting drugs, proteins, biological functions, and diseases (Ruiz, Zitnik & Leskovec, *Nature Communications*, 2021).
+- *Proteomics Graph Analysis*:
+  - *Graph Structure*: Nodes represent proteins, enriched with node attributes like protein sequence data. Edges represent Protein-Protein Interactions (PPIs) based on physical binding or functional similarity.
+  - *Task*: Node classification to infer automated protein functions (e.g., `Graph2GO`), and link prediction/denoising via Variational Graph Auto-Encoders (VGAE) to detect true protein complexes hidden in noisy, false-positive PPI networks.
+
+- *Transcriptomics Graph Analysis*:
+  - *Graph Structure*: A bipartite or heterogeneous graph where nodes are non-coding RNAs (miRNAs, lncRNAs) and diseases. Edges represent known experimental associations.
+  - *Task*: Link prediction. The GNN (often using attention mechanisms or autoencoders) learns to predict novel, unobserved associations between a specific non-coding RNA dysregulation and a disease.
+
+=== Pharmaceutical Scale: Drug Discovery and Repositioning
+GRL integrates chemical information, target interactions, and clinical side effects to accelerate drug discovery.
+
+- *Drug-Target Interaction (DTI) Prediction*:
+  - *Graph Structure*: A heterogeneous bipartite network where nodes are drugs (chemical compounds) and target proteins. Edges represent binding affinities or known physical interaction.
+  - *Task*: Link prediction. Deep mining these networks predicts novel binding targets for existing drugs, which is crucial for early-stage drug discovery (e.g., `DTIGEMS+`).
+
+- *Drug-Disease Association (Drug Repurposing)*:
+  - *Graph Structure*: Nodes are drugs and diseases (often encoded using Medical Subject Headings, MeSH. Edges represent treatment indications.
+  - *Task*: Link prediction. The model embeds the network to recommend safe, existing approved drugs for new disease indications without designing a new molecule from scratch.
+
+- *Drug-Drug Interaction (DDI) & Polypharmacy Side Effects*:
+  - *Graph Structure*: A multi-relational network where nodes are drugs and proteins. Edges between drugs represent specific adverse side effects caused by their co-administration (polypharmacy).
+  - *Task*: Edge-label prediction (or multi-relational link prediction). The GNN (e.g., *Decagon*) predicts not just *if* two drugs interact, but *which specific adverse side effect* (the edge label) will occur when a patient takes both drugs simultaneously.
