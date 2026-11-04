@@ -4,78 +4,93 @@
 
 == Brief recap
 
-== Patient Similarity Networks (PSN)
+=== Patient Similarity Networks (PSN)
 
-Patient Similarity Networks are graphs in which each node represents a patient and each edge indicates the similarity between two patients. The definition of similarity may vary.
+Patient Similarity Networks are graphs in which each *node* represents a *patient* and each *edge* indicates the *similarity between two patients*. The definition of similarity may vary.
 
-SNF is an algorithm that integrates multiple PSNs (different views of the same data) into a single graph. In this way, we can integrate more data and therefore use more information.
+Usually we can have different views of the same data. We may have different PSNs that represent different views of the same data. For example, we may have a PSN that represents the similarity between patients based on their gene expression data, and another PSN that represents the similarity between patients based on their clinical data.
 
-With real clinical data, missing values are very common. An extension of SNF called SNF-IM can also handle missing data.
+*SNF* (Similarity Network Fusion) is an algorithm that integrates multiple PSNs (different views of the same data) into a single graph (see past lectures for more details).
+SNF-IM can also handle missing data.
 
-== SNF (Similarity Network Fusion)
+=== Similarity Network Fusion (SNF)
 
-We start with different views. For example, one view may be a matrix whose rows are patients and whose columns are genes.
+*Similarity Network Fusion (SNF)* integrates heterogeneous omics data (e.g., mRNA expression, DNA methylation) in the space of samples (patients) rather than measurements. Instead of directly concatenating feature matrices, it *builds an individual Patient Similarity Network (PSN)* for each data type and iteratively fuses them.
 
-The procedure is as follows:
-- We create a similarity matrix for each view.
+Procedurally:
+1. Initial *Similarity Matrices* ($W$): For each data view, the pairwise similarity between patients $x_i$ and $x_j$ is computed using a scaled exponential Euclidean kernel:
+$
+  W(i, j) = exp(- (rho(x_i, x_j)^2) / (mu epsilon_(i j)))
+$
+where $rho(x_i, x_j)$ is the Euclidean distance, $mu$ is a hyperparameter, and $epsilon_(i j)$ adapts the kernel to the local neighborhood density to eliminate scaling issues.
 
-- From each similarity matrix, we create a graph whose nodes are patients and whose edges represent the similarity between patients.
+2. *Global* ($P$) and *Local* ($S$) Matrices: From $W$, SNF isolates global topology and local neighborhoods into two normalized matrices:
+  1. *Global Matrix ($P$)*: encodes all pairwise similarities, normalized to sum to 1 per row (with self-similarities $P(i,i) = 1/2$ to avoid self-domination and numerical instability).
+  2. *Sparse Local Matrix ($S$)*: encodes similarities *only* for the $K$-nearest neighbors ($N_i$), setting all other edges to $0$. This enforces the assumption that strong local similarities are far more reliable than remote ones.
 
-- By exploiting the similarities between the different graphs, we create a single graph that represents all the views.
+3. *Iterative Cross-Diffusion* (Message Passing): Assuming two views (e.g., View 1 and View 2), SNF iteratively updates the global matrix of one view by diffusing information through the local structures of the other:
+$
+  P_(t+1)^((1)) & = S^((1)) times P_t^((2)) times (S^((1)))^T \
+  P_(t+1)^((2)) & = S^((2)) times P_t^((1)) times (S^((2)))^T
+$
+#note()[
+  Similarity information is propagated exclusively through common neighborhoods. If patients $i$ and $j$ share close friends (neighbors) in View 1, and those friends are highly similar in View 2, the overall similarity between $i$ and $j$ is heavily reinforced.
+]
 
-This is important because it allows us to work with an arbitrary number of views. The final graph is useful because it takes into account all the information from the individual views.
+4. Final *Fused Network*: After $t$ iterations, the parallel diffusion processes converge, and the overall status matrix is computed as the average of the updated networks: $P^((c)) = (P_t^((1)) + P_t^((2))) / 2$. The resulting fused network organically drops unsupported weak edges (reducing noise) while capturing both shared and complementary similarities across all data types.
 
 === Miss-SNF
 
-This method is designed for missing data.
+It enables Similarity Network Fusion (SNF) to handle missing data. It is based on the assumption that patients with similar profiles in one view are likely to be similar in other views as well. This allows for the imputation of missing similarities by leveraging information from other patients. We can have different strategies:
+- *miss-SNF one*: On missing data, Self-loop similarity is set to 1, 0 for all the other. Missing similarities are imputed by averaging the similarities of the $K$-nearest neighbors in the other views.
 
-The most commonly used approach is Miss-SNF equality: for half of the patients, a patient is considered identical to itself, while for the other half it is considered identical to all the other patients. Thanks to SNF's propagation mechanism, the similarity of a patient with missing data is estimated from information obtained from the other patients.
+- *miss-SNF equidistant*: small equal similarities are assigned to all the othert patients. For half of the patients, a patient is considered identical to itself, while for the other half it is considered identical to all the other patients.
 
-= Explainable AI
+== Explainable AI
 
 #warning()[
-  A neural network is a black-box model. In a real clinical setting, the explainability of the model is very important.
+  A neural network is a *black-box model*. In a real clinical setting, the explainability of the model is very important, the medical doctor can't rely only on the prediction of the model, but he needs to understand why the model made that prediction.
 ]
 
-*Explainable AI* (XAI) is a research field concerned with making models interpretable. This is useful because it provides a patient with not only the raw prediction but also the reason behind it.
+*Explainable AI* (XAI) is a research field concerned with making models interpretable. This is useful because it provides to a patient not only the raw prediction but also the reason behind it.
 
 There are two kinds of explainability methods:
-- *Intrinsic methods*: Explanations are part of the model. For example, if we use an attention mechanism, we can see which parts of the input are more important for the prediction. This is a very good approach, but it is not always possible to use.
+- *Intrinsic methods*: Explanations are part of the model. For example, if we use an *attention mechanism*, we can see which parts of the input are more important for the prediction. This is a very good approach, but it is not always possible to use.
+- *Post-hoc methods*: Explanations are generated *after the model has been trained*. For example, we can use SHAP or LIME to understand which parts of the input are more important for the prediction. This is a very good approach, but it is not always possible to use.
 
-- *Post-hoc methods*: Explanations are generated after the model has been trained. For example, we can use SHAP or LIME to understand which parts of the input are more important for the prediction. This is a very good approach, but it is not always possible to use.
+There are also two *scopes* of explainability:
+- *Instance level*: for a particular patient, we can understand why the model made a particular prediction. This is very important in a clinical context.
+- *Model level*: we can understand how the model works in general. This is very important for determining whether the model is biased and understand the overall decision-making process of the model.
 
-There are also two scopes of explainability:
-- Instance level: for a particular patient, we can understand why the model made a particular prediction. This is very important in a clinical context.
-
-- Model level: we can understand how the model works in general. This is very important for determining whether the model is biased.
-
-== GNN XAI Taxonomy
+=== GNN XAI Taxonomy
 
 We focus on the explainability of Graph Neural Networks (GNNs). The main categories are:
-- Generation-based methods: These methods create artificial graphs that are similar to the original graph and observe how the model behaves on them. This is a very good approach, but it is not always possible to use.
+- *Generation-based methods*: These methods create *artificial graphs* that are similar to the original graph and observe how the model behaves on them.
 
-- Surrogate-based methods: These methods create a simpler model that approximates the original model, such as a linear model, and observe how it behaves in a particular graph neighborhood (for example, around a specific patient).
+- *Surrogate-based methods*: These methods create a simpler model that approximates the original model, such as a linear model, and observe how it behaves in a particular graph neighborhood (for example, around a specific patient).
 
-- Decomposition-based methods: These methods decompose the model into smaller parts and determine how each part contributes to the final prediction. This is a very good approach, but it is not always possible to use.
+- *Decomposition-based* methods: Propagates the final score backward layerby-layer to split the prediction score across input nodes and edges
 
-- Gradient-based methods: These methods use the model's gradient to understand which parts of the input are more important for the prediction.
+- *Gradient-based methods*: These methods use the model's gradient to understand which parts of the input are more important for the prediction.
 
-- Perturbation-based methods: These methods perturb the input and observe how the model behaves on the perturbed input. We then compare this behavior with the behavior on the original input to determine which parts of the input are more important for the prediction.
+- *Perturbation-based methods*: Masks or removes parts of the input graph to observe how much the final prediction changes. In this category we found the *counterfactual explanations* methods, which are very promising and useful in a clinical context.
 
 == Counterfactual Explanations
 
-Counterfactual explanations answer *what-if questions*. They find the *minimum change* to the input that would change the prediction. This is very important in a clinical context because it can help doctors understand the minimum change that could be made to a patient to change the prediction.
+Counterfactual explanations answer *what-if questions*: They find the *minimum change* to the input that would change the prediction. This is very important in a clinical context because it can help doctors understand the minimum change that could be made to a patient to change the prediction. For example: _if your BMI were lower than 29, your predicted outcome would be survived instead of deceased_
 
 These are new and very promising methods. They are useful for:
 - Instance-level personalized explanations: identifying disease drivers for a specific patient.
 - Actionability: a doctor can suggest a treatment that could change the prediction, such as surgery or a drug.
 
 We have different methods for generating counterfactual explanations:
-- Search-based methods: These methods find an existing example that is similar to the input but has a different prediction. This is a good approach, but it is not always possible to find a similar example.
+- *Search-based methods*: These methods find an existing example (is in the dataset) that is similar to the input but has a different prediction. This is a good approach, but it is not always possible to find a similar example.
 
-- Heuristic-based methods: These methods modify the input graph.
+- *Heuristic-based methods*: Modifies the input graph step-by-step using predefined rules until the model prediction changes.
 
-- Learning-based methods: These methods train a model or optimize parameters to generate counterfactual examples. We can use an agent that learns which feature of a patient needs to be changed in order to maximize the reward function.
+- *Learning-based methods*: These methods train a model or optimize parameters to generate counterfactual examples. We can use an agent that learns which feature of a patient needs to be changed in order to maximize the reward function (RL approach).
+
+Currently there are no methods that can generate counterfactual explanations multiomics PSNs data.
 
 == CE-GNN
 
