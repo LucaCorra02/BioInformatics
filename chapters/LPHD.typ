@@ -198,3 +198,7 @@ Our model has a small bottom box-plot range: in most cases, we need to change on
 - We need to update the graph after each feature-ranking step. Currently, the graph is fixed.
 
 - Instead of choosing the important feature heuristically, we could use an agent with a reward function capable of exploring the feature space and finding the best feature to change in order to obtain a valid counterfactual explanation.
+
+#note()[
+  Code is available at: https://github.com/haricalzi/PhD-Lectures/tree/main/Bioinformatics
+]
