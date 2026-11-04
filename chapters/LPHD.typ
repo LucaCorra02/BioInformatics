@@ -94,54 +94,102 @@ Currently there are no methods that can generate counterfactual explanations mul
 
 == CE-GNN
 
-These are new methods for generating counterfactual explanations on GNNs. The task is node classification on a biomedical graph.
+The main exsisting methods for expleaining GNNs are feature attribution methods. They try to explain wich features contribute the most to a specific prediction. They fail to explicitly guide clinicians
+on *how to achieve a different clinical outcome*, e.g. by identifying which factors may be responsible for changing an unfavorable prognosis into a favorable one.
 
-The input data consist of multi-omics data and a specific patient that we want to explain.
+Existing counterfactual GNN methods primarily focus on graph classification tasks. To our knowledge, no explainable methods have been explicitly designed to generate counterfactuals for vertex classification in PSNs; the exact task required for personalized diagnosis and outcome prediction.
 
-The procedure is as follows:
-- We use Miss-SNF to integrate the multi-omics data and create a PSN graph. The nodes are patients, and the edges represent the similarity between patients.
+In this work, we propose a Counterfactual Explanation Graph Neural Network (*CE-GNN*) framework explicitly designed for PSNs wich is able to integrating multi-omics data.
 
-- We use a GNN encoder to create a patient embedding. The embedding space is constructed using a contrastive loss function. The main idea is that patients with the same disease should be close to one another in the embedding space, while patients with different diseases should be far apart. We push patients from different classes apart up to a specific margin.
+=== Pipeline
 
-- We then use cosine similarity in the embedding space to find the patients most similar to the patient that we want to explain.
+==== Miss-SNF + GNN
 
-- We perform counterfactual feature ranking:
-  - Absolute difference
-  - Statistical significance
-  -
+We use Miss-SNF to integrate the multi-omics data and create a single PSN graph. The final network $G$ is an integrated graph that synthesizes information from multiple omics data types.
 
-  We obtain a ranking of the features of the counterfactual patients that are most important for the prediction of the patient that we want to explain.
+The output is a graph $G = (V, E)$ where $V$ is the set of patients and $E$ is the set of edges representing bio-molecular similarities. We define a *labeling function* $phi: V -> {C_1, C_2, dots, C_m}$ to assing each patient to a specific disease class $m$. Usually $m=2$ for binary classification tasks, where $C_1$ and $C_2$ represent two opposite disease classes (e.g., healthy vs. diseased).
 
-- After each feature-ranking update, we use a GNN classifier to predict the class of the patient that we want to explain. We stop when the prediction changes. In this way, we can find the minimum change needed to change the patient's prediction.
-
-The idea is to work on a particular set of features to improve the patient's clinical situation.
-
-=== Dataset
-
-The dataset is synthetic and has no ground truth. The ROSMAP dataset is also used; it is a real dataset based on Alzheimer's disease.
-
-The metrics used are:
-- Ground truth metrics, such as precision, recall, F1-score, accuracy, AUC-ROC, and AUC-PR. These metrics are used to evaluate the performance of the model.
-
-- Quality of the generated counterfactuals, including validity, proximity, sparsity, and diversity.
-
-Validity:
+We use a *Siamese GNN* to create a patient embedding (initialy each patient has their features vector as embedding). The embedding space is constructed using a *contrastive loss function*:
 $
-  ("Number of successful prediction flips" / "total number of counterfactuals generated") * 100
+  L(H) = Y_(i j) ||h_i - h_j||^2 + (1 - Y_(i j)) max(0, m - ||h_i - h_j||^2_2)
 $
+where:
+- $h_i$ and $h_j$ are the *embeddings* of patients $v_i$ and $v_j$. They correspond to rows within the hidden representation matrix $H in R^(n times d)$.
+- $Y_(i j)$ is a *binary indicator*: $Y_(i j) = 1$ if patients $v_i$ and $v_j$ belong to the same disease class ($phi(v_i) = phi(v_j)$), and $Y_(i j) = 0$ otherwise.
 
-Fidelity: if the GNN has correctly predicted the patient and the label is flipped by the counterfactual explanation:
+- $m$ represents a *margin* ensuring that dissimilar patient pairs $(h_i, h_j)$ that are separated by a Euclidean distance *greater than $m$* do not incur a loss penalty
+
+#informally()[
+  This loss forces the GNN to learn an embedding space where patients sharing the same clinical diagnosis or outcome are clustered closely together, while patients with differing outcomes are pushed apart.
+]
+
+=== Ranking
+
+For each query node $v_i$ with hidden representation $h_i$, we retrieve a *counterfactual example, $v_(c i)$*, by selecting the *most
+similar node* $v_j$ whose predicted class differs from that of $v_i$ ($phi(v_j) != phi(v_i)$). Similarity is measured using cosine similarity in the embedding space:
 $
-  1 / |X| sum_(x in X) (1[theta(x) = y_x])
+  v_(c i) = "argmax"_(v_j: phi(v_j) != phi_(v_i)) (h_i^t h_j) / (||h_i|| dot ||h_j||)
 $
+counterfactual hidden representation is $h_(c i)$. Where $f^(c i)$ denotes the feature vector associated with the counterfactual node $v_(c i)$ and $f^(i)$ denotes the feature vector associated with the original node $v_i$.
 
-The model achieves the goal of generating a counterfactual explanation for most patients (validity: 91%). This result can be improved, but the sparsity is already very good (85.92), because we do not need to change half of the features to change the prediction. This is beneficial from a clinical point of view because we can suggest that the doctor change only a few features of the patient to change the prediction.
+=== Counterfactual Generation
 
-=== Increasing the feature
+We define an *explanation as a minimal, interpretable set of feature-level edits* required to conceptually transform patient $v_i$
+into $v_(c i)$, thereby *changing the model’s prediction*. This edit represent plausible interventions that could be applied to the patient to achieve a different clinical outcome.
 
-The method was tested on the MLOmics dataset. A counterfactual explanation is generated for most patients, and the sparsity is also very good.
+Given the feature vectors $f^i = [f^i_1, dots, f^i_p] in R^p$ and $f^(c i) = [f^(c i)_1, dots, f^(c i)_p] in R^p$ the idea is to progressively modify the features of $f^i$ to match those of $f^(c i)$, untill the model prediction changes.
 
-The box plot shows the features that need to be modified to obtain a valid counterfactual explanation. Our model has a small bottom box-plot range: in most cases, we need to change only a few features to obtain a valid counterfactual explanation. However, in some cases, we need to change many features to obtain a valid counterfactual explanation.
+To achieve this, we apply the following steps:
+1. *Feature norm*: To ensure a fair comparison of magnitudes across
+different biological or clinical modalities, all features are first standardized (e.g., via z-score or softmax normalization).
+
+2. *Feature ranking*: We rank the features based on we rank them based on their likelihood to drive a change in prediction.
+  - *Absolute difference*: $|f^i - f^(c i)|$ between the target patient and their counterfactual, assuming the largest raw differences are the primary drivers.
+  - *Statistical Significance*: Data-driven approach computing the ANOVA F-values to assess the correlation and importance of each individual feature against the clinical outcome
+  - *Model-based importance*: A predictive approach that extracts intrinsic feature importance scores directly from an auxiliary trained Random Forest classifier to guide the substitution order based on learned predictive power.
+
+3. *Iterative feature substitution*: Following the ranked order computed in the previous step, we *cumulatively* assign one by one the specific feature values of the counterfactual patient $v_(c i)$ to the feature vector of the target patient $v_i$.
+
+4. After every individual feature swap, the modified feature vector is evaluated by the trained GNN. The iterative loop breaks when the GNN predicts a new class label. The precise subset of features responsible for inducing this label switch is recorded as the counterfactual explanation $s_i$
+
+== Dataset
+
+Because real-world clinical datasets lack a definitive ground truth for feature-level explanations, it is difficult to objectively evaluate explanation accuracy. Therefore, to validate whether the CE-GNN can successfully identify and extract significant counterfactual features, we apply our algorithm to *synthetic data* where the ground-truth features are known by design.
+
+Examples belonging to two classes with a *pre-defined subset of discriminative features*. The synthetic dataset comprises $n = 300$ samples belonging to two distinct classes $C in {0, 1}$ and $p = 150$ features, partitioned into three distinct views to simulate the heterogeneity of multi-omics data sources used in PSN construction.Features of Class $0$ examples are distributed according to a 0-centered normal distribution $N (0, sigma)$ having different standard deviations $sigma$.
+
+*ROSMAP* dataset. To evaluate the framework in a real-world clinical
+context, we utilize a multi-omics Alzheimer’s disease dataset. The cohort comprises $351$ patients ($182$ individuals diagnosed with Alzheimer’s, $169$ controls). The dataset encompasses three distinct biological modalities: mRNA expression, miRNA expression, and DNA methylation data.
+
+=== Metrics
+
+We assess the performance of the explanation methods across two primary dimensions:
+- Their ability to accurately identify the underlying drivers of a prediction
+- Structural quality of the generated counterfactuals.
+
+We compare the predicted subset of important features to the groundtruth important features. Since ground-truth features are known by design only for the synthetic dataset, this evaluation is restricted to the synthetic experiments. We frame this as a binary classification task, where a feature is either correctly or incorrectly identified as important, and utilize Precision, Recall,
+Accuracy, and Macro-F1 metrics.
+
+For the second dimension we measure Fidelity, Validity, Sparsity:
+- *Validity*: Assesses the proportion of generated counterfactuals that successfully alter the initial prediction:
+  $
+    ("Number of successful prediction flips" / "total number of counterfactuals generated") * 100
+  $
+- *Fidelity*: measures how faithful the explanations are to the oracle considering their correctness:
+  $
+    1 / (|X|) sum_(x in X) (1[Phi(x) = y_x]- 1[Phi(x^') = y_(x)])
+  $
+  Where $1[Phi(x) = y_x]$ is equal to 1 if the classifier’s predicted class for the original sample $x$ is its true label $y_x$, and $1[Phi(x^′) = y_x]$ is equal to 1 if the classifier’s predicted class for the generated counterfactual $x^'$ is the label $y_x$. It ranges from $-1$ to $1$
+
+
+- *Sparsity*: measures the conciseness of the explanation by quantifying the relative reduction in feature space:
+  $
+    1 / (|X|) sum_(x in X) (1 - "Number of important features" / "Total number of features")
+  $
+
+The model achieves the goal of generating a counterfactual explanation for most patients (validity: $91%$). This result can be improved, but the *sparsity is already very good* ($85.92$), because we do not need to change half of the features to change the prediction. This is beneficial from a clinical point of view because we can suggest that the doctor change only a few features of the patient to change the prediction.
+
+Our model has a small bottom box-plot range: in most cases, we need to change only a few features to obtain a valid counterfactual explanation. However, in some cases, we need to change many features to obtain a valid counterfactual explanation.
 
 === Limitations
 
