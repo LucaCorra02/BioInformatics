@@ -1,29 +1,196 @@
 #import "../template.typ": *
 
-= LLM (introduction)
+= LLM - Introduction
 
-They are introduced to process text. Are able to assign probability to sequence of word. It also easy that we can have other type of sequence in other context, lilke DNA, mRNA. The same model (with some adaption) can be apply in other context.
-
+LLM are *large language model*. They are a type of neural network that are trained on a large corpus of text. They are able to understand the context of the text and generate new text based on the input. The main task is to predict the next word in a sequence of words.\
 They can be also *generatve model*: generate new text by sampling the next word.
 
-This model are *pre-trained* on very large database of text, with the task of predicting the next token. There are three main architecture:
-- Decoders: like GPT, Claude, Gemini. Decoders are able to predict the next word using the previous word as a context
-- Encoders: BERT family. Encoder are able to provide an embedding of the text that take into account the semantic of a word (they are bidirectional instead of decoder)
-- Mixed
+#note()[
+  It's easy to understand that LLM are not only for text. They can be used for any type of sequence. For example, we can use LLM to predict the next nucleotide in a DNA sequence or the next amino acid in a protein sequence.
+]
 
-== Encoder
+There are trhee type of LLM architecture:
+- *Encoder*: Like BERT family. Encoder are able to provide an *embedding* of the text that take into account the semantic of a word (they are bidirectional instead of decoder)
+- *Decoder*: like GPT, Claude, Gemini. Decoders are able to predict the next word using the previous word as a context
+- *Encoder-Decoder*: This type of architecture can use for *translation task*. In bio-informatics we could try to use a sequence (a protein) and try to generate a new protein that interact with the protein in input.
 
-They are also called mask languege model. Some words are not given in output but should be predicted by the model based on the sourinding context (left and right).
+== Architecture
 
-== Encoder-Decoder
+The main idea its that we have a stack of *encoder* that gives a input sequence $x_1,dots, x_n$ maps them to a sequence of continuos representation $z=(z_1, dots, z_n)$. Given $z$ the decoder generate an output sequence $y_1, dots, y_m$ one elment at time (*auto-regressive model*: previously generated symbol used as additional input when generating text)
 
-This type of architecture can use for translaction task. In bio-informatics we could try to use a sequnce (a protein) and try to generate a new protein that interact with the protein in input.
+#align(center)[
+  #image("../img/transformer.png", width: 40%)
+]
+Architecture stacks:
+- *The Encoder (Source Processing):*
+  - $N=6$ identical layers. Each layer has two sublayer (multi head attention and feed forwarding)
 
-Other task is given a non-coding RNA we try to synthitise a the target of the RNA in input.
+  - Uses *Self-Attention*. Every token attends to every other token in the input sequence in a single matrix multiplication ($O(n^2)$ complexity). Key, Value and Query come from the same phrase.
 
-== Decoder
+  - All sublayer produced $d_"model" = 512$ dimensions output
 
-Given a prompt (the starting input text) we can generate new text. The model are autogeneretive: the new text is used as context for new words.
+- *The Decoder (Auto-regressive Generation):*
+  - Stack of $N=6$ identical layer
+  - *Masked Self-Attention*: *Prevents leftward information flow*. Future tokens are masked by setting their values to $infinity$ before the softmax. Since $e^(-infinity) = 0$, the model cannot "cheat" by looking at future words during training.
+
+  - *Cross-Attention*: Connects the two blocks. The *Decoder provides the Queries* ($Q$), while the *Encoder's final output* acts as the static database, providing the *Keys ($K$)* and *Values ($V$)*.
+    #note()[
+      Cross-Attention dynamically aligns the Decoder with the Encoder, allowing the generation process to *selectively attend to relevant segments* of the source sequence at each decoding step.
+    ]
+
+=== Encoder
+
+Encoder is composed by a stack of $N$ identical layer. Each layer has two sublayer:
+1. Multi-head self-attention mechanism
+2. Feed-forward neural network
+
+==== Self-Attention
+
+Self-attention is a mechanism that allows the model to *weigh the importance of different tokens in the input sequence* when encoding a specific token. It computes a weighted sum of the input embeddings, where the weights are determined by the similarity between the token being encoded and all other tokens in the sequence.
+
+We can see the self-attention as a matrix multiplication between the input sequence and a set of learned weight matrices. The input sequence $X in R^(N times d_"model")$ is transformed into three different representations:
+- *Query ($Q$)* $Q = X W^Q in R^(N times d_k)$: Represents the token we are currently encoding.
+- *Key ($K$)* $K = X W^K in R^(N times d_k)$: Represents the tokens we are comparing against.
+- *Value ($V$)* $V = X W^V in R^(N times d_v)$: Represents the information we want to aggregate based on the attention scores
+
+Each of these projections is learned during training. The dimensions of these projections are typically set to $d_"k" = d_"v" = d_"model" / h$, where $h$ is the number of attention heads. The attention scores are computed as:
+$
+  "Attention" = "softmax"((Q K^T) / sqrt(d_k)) V
+$
+where:
+- $Q K^T$ computes the similarity between the query and all keys. It's a dot product that gives us a score for how much attention each token should pay to every other token. The result is a $N times N$ matrix of attention scores.
+
+- The softmax function normalizes these scores into a probability distribution, ensuring that they sum to 1.
+
+- Finally, we multiply the attention scores by the value matrix $V$. These matrix present on the rows the token and on the columns the embedding features. The result is a weighted sum of the values, where the weights are determined by the attention scores. For each token, we get a new embedding of dimension $d_v$:
+$
+  sum_(j=1)^N "Attention"(i,j) V_j
+$
+
+#note()[
+  *Why scale by $sqrt(d_k)$?* If the hidden dimension $d_k$ is large, the dot products $Q K^T$ produce massive values. Passing huge numbers into a softmax function pushes it into extreme flat regions where the derivative is close to zero (*vanishing gradient problem*), stopping the network from learning. Scaling down prevents this saturation.
+]
+
+#example()[
+  Let's trace the math with a simplified scenario. Assume a sequence of $N = 2$ tokens (e.g., the words "Deep" and "Learning") and a hidden dimension of $d_k = d_v = 2$.
+
+  Suppose that after multiplying our input sequence $X$ by the learned weights $W^Q, W^K, W^V$, we obtain the following matrices:
+  $
+    Q = mat(1, 0; 0, 2), quad K = mat(1, 1; 0, 2), quad V = mat(10, 20; 30, 40)
+  $
+  Each row corresponds to a token (Row 1 = "Deep", Row 2 = "Learning").
+
+  *Step 1: Compute Similarity ($Q K^T$)* \
+  We compute the dot product between the queries and the transposed keys to measure how much each token relates to the others:
+  $
+    Q K^T = mat(1, 0; 0, 2) mat(1, 0; 1, 2) = mat(1, 0; 2, 4)
+  $
+  - Row 1 ($[1, 0]$) contains the raw scores for Token 1 looking at Token 1 and Token 2.
+  - Row 2 ($[2, 4]$) contains the raw scores for Token 2 looking at Token 1 and Token 2.
+
+  *Step 2: Scale and Softmax* \
+  We scale the scores by $sqrt(d_k) = sqrt(2) approx 1.41$. To keep the math readable in this toy example, let's assume the scaled matrix is roughly:
+  $
+    (Q K^T) / sqrt(d_k) approx mat(0.7, 0; 1.4, 2.8)
+  $
+  Next, we apply the softmax function to each row independently. Softmax converts the raw scores into a valid probability distribution (where each row sums to 1):
+  $
+    "Attention Weights" approx mat(0.67, 0.33; 0.20, 0.80)
+  $
+  - Token 1 pays $67%$ of its attention to itself and $33%$ to Token 2.
+  - Token 2 pays $20%$ of its attention to Token 1 and $80%$ to itself.
+
+  *Step 3: Compute the Final Output* \
+  Finally, we multiply the attention weights by the Value matrix $V$. This mixes the information of the tokens based on the computed attention distribution:
+  $
+    "Output" = mat(0.67, 0.33; 0.20, 0.80) mat(10, 20; 30, 40) = mat(16.6, 26.6; 26.0, 36.0)
+  $
+  The first row of the output is a weighted sum of the values: $0.67 times [10, 20] + 0.33 times [30, 40]$. The token "Deep" has now successfully integrated contextual information from the token "Learning".
+
+]
+
+==== Multi-head Attention
+
+Instead of a single attention function, the model projects $Q, K, V$ into $h$ smaller sub-spaces (e.g., $h=8$ heads).
+- *Multiple Perspectives*: Head 1 might focus on syntax (subject-verb agreement), while Head 2 maps semantic relationships (color-noun).
+- *Zero Overhead*: Because the vector dimension is sliced ($512 / 8 = 64$ dimensions per head), calculating 8 heads in parallel requires the exact same computational cost as a single 512-dimensional head.
+
+Outputs from all heads are concatenated back together and linearly projected via $W^O$.
+
+#note()[
+  Each Head have they own $W^Q, W^K, W^V$ matrices. This allows each head to learn different types of relationships between tokens.
+]
+
+
+==== Feed-forward neural network
+
+Attention alone is just a linear combination of vectors. To extract abstract, complex patterns, *each token's new context-aware vector* is passed through an identical FFN independently (Position-wise).
+$ "FFN"(x) = max(0, x W_1 + b_1) W_2 + b_2 $
+If Attention is the "information gathering" phase, the FFN is the non-linear "reasoning" phase.
+
+*Residual connections* stabilize deep network training by creating shortcut paths that allow gradients to flow unimpeded through the layers, effectively mitigating the vanishing gradient problem.
+
+#note()[
+  The idea is that we add a `AddNorm Layer`, the input $x$ and the result vector form the attention $f(x)$ are summed up $(f(x)+x)$. This is usefull in the back-propagation step because the derivate will be *$F'(X)+1$*. The $+1$ is usefull because if the weights $F'(x)$ tend to zero the gradient is multiplied by $1$, so it arrived clean and continues to the previous layer.
+]
+
+=== Decoder
+
+
+
+
+==== Cross-Attention
+
+Cross-Attention links *encoder* and *decoder*. The decoder is allow to look back at the entire past states of the encoder and *dynamically* select with parts are relevant at each specific generation step:
+
+1. The decoder at step $t$ computes how relevant each past encoder state $s_k$ (*internal last state* for each word in the input sequence) is with respect to its current internal state $h_t$ (dot product):
+  $
+    "score" = theta(s_k, h_t)
+  $
+  #note()[
+    These scores *change dynamically* for every new word generated, allowing the model to shift its focus and attend to different segments of the input sequence as needed.
+  ]
+
+
+2. The score are normalized into a probability distribution using a *soft-max* function.
+3. The new dynamic context is the weighted sum of all encoder states:
+  $
+    c_t = sum^n_(k=1) a_k s_k
+  $
+
+#note()[
+  Instead of a *single static vector*, the model computes a specific context *$c_t$* *for every single word *it generates, eliminating the fading memory problem completely.
+]
+
+==== Causal Masked Self-Attention
+
+The foundational mechanism of Decoder-only architectures (such as the GPT family) is *Causal Masked Self-Attention*. While BERT's Encoder employs bidirectional attention where every token can look at the entire sequence, a generative language model must remain *blind to future tokens during training* to accurately simulate autoregressive inference.
+
+During the attention layer computation, the raw alignment scores are generated via the scaled dot-product of Queries and Keys ($(Q K^T) / sqrt(d_k)$). Before passing these scores to the Softmax function, a causal attention mask matrix ($M$) is added:
+
+$ "Attention"(Q, K, V) = "softmax"((Q K^T) / sqrt(d_k) + M)V $
+
+The mask $M$ is a *lower-triangular matrix* defined as:
+- $M_(i,j) = 0$ for $i >= j$ (the token can attend to past tokens and itself).
+- $M_(i,j) = -infinity$ for $i < j$ (the token is blocked from attending to future tokens).
+
+When the Softmax functionexponentiates these values, $e^(-infinity)$ drops to $0$, mathematically eliminating any information leakage (*information lookahead bias*) from right to left.
+
+During evaluation, when our model is only adding one new word after each iteration, it* would be inefficient to recalculate self-attention along earlier paths* for tokens that have already been processed.
+#note()[
+  Every self-attention layer *holds on to its respective key and value* vectors for each token.
+]
+
+#warning()[
+  *Parallel Training vs. Sequential Inference:* \
+  Although text generation in production is strictly sequential ($O(T)$ steps, writing one token at a time), the causal mask allows the pre-training phase to be massively parallelized on GPUs. A single training sequence of length $T$ is processed in a single forward pass, effectively acting as a batch of $T$ distinct sub-sequences where each position $t$ learns to predict the target token $t+1$.
+]
+
+
+
+
+
+
 
 == Adapting an LLM to task
 
@@ -244,9 +411,9 @@ the embedding is a map to token to vector. This function will be learned by the 
 
 The input matrix is a matrix that is composed $X in R^(n times d)$. Inizitally the embedding associated are usualli sampled from a random distribution (or one hot encoded). This act as a look-up table.
 
-== Encoder block 
+== Encoder block
 
-Is composet by two main block: 
+Is composet by two main block:
 - Multi-head attention
 - FNN
 this two block are wrapped in two residual connection to solve the vanishing gradient problem
