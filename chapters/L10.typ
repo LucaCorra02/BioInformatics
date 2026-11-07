@@ -2,33 +2,33 @@
 
 = LLM - Introduction
 
-*Large Language Models (LLMs)* are deep neural networks trained on massive corpora of sequential data. They are capable of capturing complex contextual relationships across tokens and generating new sequences conditioned on an input prompt. Formally, a language model estimates a probability distribution over a sequence of tokens $w_1, dots, w_n$ via the chain rule of conditional probabilities:
+*Large Language Models (LLMs)* are deep neural networks trained on massive corpora of sequential data. They are capable of capturing complex contextual relationships across tokens and generating new sequences conditioned on an input prompt. Formally, a language model estimates a *probability distribution* over a sequence of tokens $w_1, dots, w_n$ via the chain rule of conditional probabilities:
 $
   P(w_1, dots, w_n) = product_(i=1)^n P(w_i | w_1, dots, w_(i-1)) = product_(i=1)^n P(w_i | w_(<i))
 $
-Because the core objective of an autoregressive LLM is to predict the next token $w_i$ given the preceding context $w_(<i)$, it naturally acts as a *generative model* by iteratively sampling the next token and appending it back to the input sequence.
+Because the core objective of an *autoregressive* LLM is to predict the next token $w_i$ given the preceding context $w_(<i)$, it naturally acts as a *generative model* by iteratively sampling the next token and appending it back to the input sequence.
 
 #note()[
-  LLMs are not restricted to human natural language. Because they operate on any discrete sequential domain where elements exhibit local and long-range dependencies, they can be directly applied to biological sequences—for instance, predicting the next nucleotide in a DNA/RNA sequence ($A, C, G, T$) or generating *de novo* amino acid sequences in *Protein Language Models (pLMs)*.
+  LLMs are *not restricted to human natural language*. Because they operate on any discrete sequential domain where elements exhibit local and long-range dependencies, they can be directly applied to biological sequences—for instance, predicting the next nucleotide in a DNA/RNA sequence ($A, C, G, T$) or generating *de novo* amino acid sequences in *Protein Language Models (pLMs)*.
 ]
 
 There are three main categories of Transformer-based LLM architectures:
 - *Encoder-only (Autoencoding Models)*: such as the *BERT* family (and *ESM-2* for proteins). Encoders use *bidirectional self-attention* to build rich, context-aware *embeddings* of the input sequence, taking into account both left and right context simultaneously. They are ideal for sequence classification, token-level annotation, and representation learning, rather than open-ended generation.
-- *Decoder-only (Autoregressive Models)*: such as *GPT*, *Claude*, *LLaMA*, *Gemini* (and *ProGen* / *ProtGPT2* for proteins). Decoders use *causal masked self-attention* to predict the next token using strictly the preceding tokens as context.
-- *Encoder-Decoder (Sequence-to-Sequence Models)*: such as the original Transformer, *T5*, or *BART*. Designed for conditional sequence-to-sequence tasks ($"seq" arrow.r "seq"$, e.g., machine translation). In computational biology, an Encoder-Decoder can encode a target receptor protein sequence and decode a novel binder protein or drug molecule that interacts with it.
+- *Decoder-only (Autoregressive Models)*: such as *GPT*, *Claude*. Decoders use *causal masked self-attention* to predict the next token using strictly the preceding tokens as context.
+- *Encoder-Decoder (Sequence-to-Sequence Models)*: such as the original Transformer, *T5*, or *BART*. Designed for conditional *sequence-to-sequence tasks* ($"seq" arrow.r "seq"$, e.g., machine translation). In computational biology, an Encoder-Decoder can encode a target receptor protein sequence and decode a novel binder protein or drug molecule that interacts with it.
 
 == Architecture Overview
 
-In the full Encoder-Decoder Transformer architecture, a stack of *Encoders* receives an input sequence of tokens $(x_1, dots, x_n)$ and maps it to a sequence of continuous contextual representations $bold(z) = (z_1, dots, z_n)$. Given $bold(z)$, the *Decoder* stack generates an output sequence $(y_1, dots, y_m)$ one element at a time in an *autoregressive* manner (feeding previously generated symbols back as additional input at the next step).
+In the full Encoder-Decoder Transformer architecture, a stack of *Encoders* receives an input sequence of tokens $(x_1, dots, x_n)$ and maps it to a sequence of continuous contextual representations $bold(z) = (z_1, dots, z_n)$. Given $bold(z)$ (the last hidden representation layer), the *Decoder* stack generates an output sequence $(y_1, dots, y_m)$ one element at a time in an *autoregressive* manner (feeding previously generated symbols back as additional input at the next step).
 
 #align(center)[
   #image("../img/transformer.png", width: 40%)
 ]
 
 The two stacks are structured as follows:
-- *The Encoder Stack (Source Processing)*:
+- *The Encoder Stack*:
   - Composed of $N = 6$ identical layers. Each layer contains two sub-layers: a *Multi-Head Self-Attention* mechanism and a *Position-wise Feed-Forward Network (FFN)*.
-  - Uses bidirectional *Self-Attention*: every token attends to every other token in the input sequence in a single parallelized matrix operation ($O(n^2)$ time and memory complexity with respect to sequence length $n$). Queries ($Q$), Keys ($K$), and Values ($V$) are all projections of the same source sequence.
+  - Uses bidirectional *Self-Attention*: every token attends to every other token in the input sequence in a single parallelized matrix operation (*$O(n^2)$* time and memory complexity with respect to sequence length $n$). Queries ($Q$), Keys ($K$), and Values ($V$) are all projections of the same source sequence.
   - Every sub-layer is wrapped in a residual connection followed by Layer Normalization (`Add & Norm`) and produces outputs of dimension $d_"model" = 512$.
 
 - *The Decoder Stack (Autoregressive Generation)*:
@@ -38,7 +38,7 @@ The two stacks are structured as follows:
   - *Position-wise Feed-Forward Network (FFN)*.
 
 #note()[
-  *Cross-Attention* dynamically aligns the Decoder with the Encoder, allowing the generation process to selectively attend to the most relevant segments of the source sequence at each decoding step, completely eliminating the static-context bottleneck of traditional RNN Encoder-Decoder models.
+  *Cross-Attention* dynamically *aligns the Decoder with the Encoder*, allowing the generation process to selectively attend to the most relevant segments of the source sequence at each decoding step, completely eliminating the static-context bottleneck of traditional RNN Encoder-Decoder models.
 ]
 
 === The Encoder Block
@@ -49,19 +49,19 @@ Each Encoder layer consists of two core modules wrapped in residual connections 
 
 ==== Self-Attention (Scaled Dot-Product Attention)
 
-Self-attention allows the model to *weigh the importance of different tokens in the input sequence* when encoding a specific token, resolving long-range dependencies regardless of physical distance in the sequence. It computes a context-aware representation for each token as a weighted sum of the values of all tokens in the sequence.
+Self-attention allows the model to *weigh the importance of different tokens in the input sequence* when encoding a specific token, resolving long-range dependencies *regardless of physical distance* in the sequence. It computes a context-aware representation for each token as a weighted sum of the values of all tokens in the sequence.
 
 From a linear algebra perspective, given an input matrix $X in RR^(N times d_"model")$ (where $N$ is the number of tokens and $d_"model"$ is the embedding dimension), each token is linearly projected into three learned representations via weight matrices $W^Q, W^K in RR^(d_"model" times d_k)$ and $W^V in RR^(d_"model" times d_v)$:
-- *Query ($Q = X W^Q in RR^(N times d_k)$)*: *"What am I looking for?"* — represents the current token's search intent.
-- *Key ($K = X W^K in RR^(N times d_k)$)*: *"What do I offer?"* — acts as the semantic label/identifier of every token being compared against.
-- *Value ($V = X W^V in RR^(N times d_v)$)*: *"What is my actual content?"* — holds the information payload to be aggregated based on the attention weights.
+- *Query ($Q = X W^Q in RR^(N times d_k)$)*: *_What am I looking for?_* it represents the current token's search intent.
+- *Key ($K = X W^K in RR^(N times d_k)$)*: *_What do I offer?_* it acts as the semantic label/identifier of every token being compared against.
+- *Value ($V = X W^V in RR^(N times d_v)$)*: *_What is my actual content?_* it holds the information payload to be aggregated based on the attention weights.
 
 Typically, the projection dimensions are set to $d_k = d_v = d_"model" / h$, where $h$ is the number of attention heads (e.g., $512 / 8 = 64$). The *Scaled Dot-Product Attention* is computed as:
 $
-  "Attention"(Q, K, V) = "softmax"((Q K^T) / sqrt(d_k)) V
+  "Attention"(Q, K, V) = "softmax"((mr(Q K^T)) / sqrt(d_k)) V
 $
 where:
-- $Q K^T in RR^(N times N)$ computes the pairwise dot-product similarity between every Query and every Key. Entry $(i, j)$ quantifies how much token $i$ attends to token $j$.
+- $mr(Q K^T) in RR^(N times N)$ computes the pairwise dot-product similarity between every Query and every Key. Entry $(i, j)$ quantifies how much token $i$ attends to token $j$.
 - The row-wise $"softmax"$ function normalizes the scaled scores into a valid probability distribution $A in RR^(N times N)$ such that $sum_(j=1)^N A_(i, j) = 1$ for every token $i$.
 - Multiplying the attention matrix $A$ by the Value matrix $V in RR^(N times d_v)$ yields a new contextualized embedding of dimension $d_v$ for each token $i$, computed as a convex combination (weighted sum) of the rows of $V$:
   $
@@ -108,14 +108,14 @@ where:
 
 ==== Multi-Head Attention
 
-Instead of computing attention once in $d_"model"$, *Multi-Head Attention* projects $Q, K, V$ into $h$ distinct lower-dimensional subspaces ($h$ heads, e.g., $h = 8$ or $12$) using independent learned projection matrices $(W_i^Q, W_i^K, W_i^V)$ for each head $i in {1, dots, h}$:
+Instead of computing attention once in $d_"model"$, *Multi-Head Attention* projects $Q, K, V$ into $h$ distinct lower-dimensional subspaces ($h$ heads, e.g., $h = 8$ or $12$) using *independent learned projection matrices* $(W_i^Q, W_i^K, W_i^V)$ for each head $i in {1, dots, h}$:
 $
   "head"_i = "Attention"(X W_i^Q, X W_i^K, X W_i^V) in RR^(N times d_v)
 $
 - *Multiple Representational Subspaces*: each head has its own parameters and can specialize in different linguistic or biological relationships (e.g., Head 1 tracks local syntactic agreement or adjacent backbone bonds, while Head 2 captures long-range coreference or 3D tertiary contact between distant amino acids).
 - *Zero Computational Overhead*: because each head operates on dimension $d_k = d_"model" / h$ (e.g., $512 / 8 = 64$), computing $h$ heads in parallel has the same asymptotic FLOP cost as single-head attention with full dimension $d_"model"$.
 
-Finally, the outputs of all $h$ heads are concatenated along the feature dimension ($N times (h dot d_v) = N times d_"model"$) and linearly projected through an output weight matrix $W^O in RR^(d_"model" times d_"model")$:
+Finally, the outputs of all $h$ heads are *concatenated along the feature dimension* ($N times (h dot d_v) = N times d_"model"$) and linearly projected through an output weight matrix $W^O in RR^(d_"model" times d_"model")$:
 $
   "MHA"(X) = "Concat"("head"_1, dots, "head"_h) W^O
 $
@@ -142,7 +142,7 @@ The inner hidden layer typically expands the dimensionality by a factor of $4$ (
 
 === The Decoder Block
 
-Unlike the Encoder, the Decoder generates sequences autoregressively one token at a time. At each decoding step $t$, the top Decoder block outputs a hidden state $h_t in RR^(d_"model")$, which is multiplied by the vocabulary projection matrix $W_"vocab"$ (often tied to the input embedding matrix) to produce a probability distribution over the next token $y_t$ given past tokens $y_(<t)$ and the Encoder representation $bold(z)$:
+Unlike the Encoder, the Decoder generates sequences autoregressively *one token at a time* (in the inference phase). At each decoding step $t$, the top Decoder block outputs a hidden state $h_t in RR^(d_"model")$, which is multiplied by the vocabulary projection matrix $W_"vocab"$ (often tied to the input embedding matrix) to produce a probability distribution over the next token $y_t$ given past tokens $y_(<t)$ and the Encoder representation $bold(z)$:
 $
   P(y_t | y_(<t), bold(z)) = "softmax"(W_"vocab" h_t + b_"vocab")
 $
@@ -156,14 +156,14 @@ In Encoder-Decoder models, *Cross-Attention* connects the two stacks by allowing
 
 ==== Causal Masked Self-Attention & The KV Cache
 
-In Decoder stacks (and Decoder-only LLMs like GPT), the self-attention sub-layer must prevent a token at position $i$ from attending to any future token at position $j > i$. Before applying the softmax, a *Causal Mask matrix* $M in RR^(N times N)$ is added to the scaled dot-product logits:
+In Decoder stacks (and Decoder-only LLMs like GPT), the self-attention sub-layer must prevent a token at position $i$ from attending to any *future token* at position $j > i$. Before applying the softmax, a *Causal Mask matrix* $M in RR^(N times N)$ is added to the scaled dot-product logits:
 $
-  "CausalAttention"(Q, K, V) = "softmax"((Q K^T) / sqrt(d_k) + M) V, quad "where " M_(i, j) = cases(
+  "CausalAttention"(Q, K, V) = "softmax"((Q K^T) / sqrt(d_k) + M) V, quad \ "where " M_(i, j) = cases(
     0 & quad "if " i >= j " (past & current tokens)",
     -infinity & quad "if " i < j " (future tokens blocked)"
   )
 $
- explicitly:
+explicitly:
 $
   (Q K^T) / sqrt(d_k) + M = mat(
     q_1 k_1^T, -infinity, dots, -infinity;
@@ -198,13 +198,15 @@ Many classification, reasoning, or biological design problems can be reformulate
   $
 ]
 
-=== Decoding and Sampling Strategies
+== Decoding and Sampling Strategies
 
-At each generation step $t$, the LLM outputs a vector of raw unnormalized scores (*logits*) $bold(u) in RR^(|V|)$ over the vocabulary $V$, which is converted into a probability distribution $P(w | w_(<t)) = "softmax"(bold(u))$. The procedure used to select the actual next token $w_t$ from this distribution is called *Decoding*:
+At each generation step $t$, the LLM outputs a vector of raw unnormalized scores (*logits*) $bold(u) in RR^(|V|)$ over the vocabulary $V$, which is converted into a probability distribution:
+$ P(w | w_(<t)) = "softmax"(bold(u)) $
+The procedure used to select the actual next token $w_t$ from this distribution is called *Decoding*:
 
 1. *Greedy Search & Beam Search (Deterministic Maximizers)*:
-  - *Greedy Search*: always selects the single most probable token $w_t = arg max_w P(w | w_(<t))$. While accurate and factual over short horizons, it lacks diversity, misses globally optimal sequences, and frequently degenerates into repetitive loops.
-  - *Beam Search*: maintains the top-$B$ most likely partial hypotheses (beams) at each step and expands them, pruning low-scoring branches.
+  - *Greedy Search*: always selects the *single most probable token* $w_t = arg max_w P(w | w_(<t))$. While accurate and factual over short horizons, it lacks diversity, misses globally optimal sequences, and frequently degenerates into repetitive loops.
+  - *Beam Search*: maintains the *top-$B$* most likely partial hypotheses (beams) at each step and expands them, pruning low-scoring branches.
 
 2. *Pure Random Sampling*:
   Samples $w_t tilde P(w | w_(<t))$ directly from the full categorical distribution until an `<EOS>` (End-Of-Sequence) token is drawn:
@@ -243,11 +245,14 @@ $
 
 == Training Lifecycle of an LLM: Pre-Training, Fine-Tuning & Alignment
 
-Building a modern LLM involves three distinct stages: (1) *Self-Supervised Pre-Training*, (2) *Domain Continued Pre-Training / Supervised Fine-Tuning (SFT)*, and (3) *Preference Alignment (RLHF)*.
+Building a modern LLM involves three distinct stages: 
+1. *Self-Supervised Pre-Training*
+2. *Domain Continued Pre-Training / Supervised Fine-Tuning (SFT)*
+3. *Preference Alignment (RLHF)*.
 
-=== Stage 1: Self-Supervised Pre-Training & Teacher Forcing
+=== Self-Supervised Pre-Training & Teacher Forcing
 
-During pre-training, the Transformer is trained on massive unlabeled corpora (billions of web pages or millions of genomes/proteins from UniProt) using *Self-Supervised Learning*: the labels are intrinsic to the sequence itself, as every token $w_(t+1)$ serves as the ground-truth target for the prefix $w_(1..t)$.
+During pre-training, the Transformer is trained on massive unlabeled corpora (billions of web pages or millions of genomes/proteins from UniProt) using *Self-Supervised Learning*: the *labels are intrinsic* to the sequence itself, as every token $w_(t+1)$ serves as the ground-truth target for the prefix $w_(1..t)$.
 
 At each position $t$, the network outputs a predicted probability vector $hat(bold(y))_t = "softmax"(bold(u)_t) in [0, 1]^(|V|)$, which is compared against the one-hot ground-truth vector $bold(y)_t$ ($y_t [w] = 1$ if $w = w_(t+1)$, and $0$ otherwise) via the *Categorical Cross-Entropy (Negative Log-Likelihood) Loss*:
 $
@@ -265,7 +270,9 @@ $
       line((0, 0), (7.5, 0), mark: (end: ">", fill: black), stroke: 1pt + black)
       line((0, 0), (0, 4.5), mark: (end: ">", fill: black), stroke: 1pt + black)
 
-      content((7.5, -0.45), anchor: "east", text(size: 8.5pt)[Predicted probability for true token $P(w_(t+1)) arrow.r$])
+      content((7.5, -0.45), anchor: "east", text(
+        size: 8.5pt,
+      )[Predicted probability for true token $P(w_(t+1)) arrow.r$])
       content((-0.3, 4.3), anchor: "east", text(size: 8.5pt)[Loss $-log(P)$])
 
       // Ticks
@@ -291,7 +298,11 @@ $
       line((px, 0), (px, py), stroke: (dash: "dashed", paint: gray))
       line((0, py), (px, py), stroke: (dash: "dashed", paint: gray))
       circle((px, py), radius: 0.12, fill: orange, stroke: 1pt + black)
-      content((px + 0.2, py + 0.2), anchor: "west", text(size: 8pt, weight: "bold", fill: orange.darken(20%))[$(P = 0.1, "Loss" = 2.30)$])
+      content((px + 0.2, py + 0.2), anchor: "west", text(
+        size: 8pt,
+        weight: "bold",
+        fill: orange.darken(20%),
+      )[$(P = 0.1, "Loss" = 2.30)$])
     })
   ]
 ]
@@ -299,13 +310,13 @@ $
 - *Teacher Forcing*: during training, if we fed the model's *own predicted token* $hat(w)_(t+1)$ as input to step $t+2$, a single early mistake would compound and derail the entire remaining sequence (*exposure bias*). Instead, we use *Teacher Forcing*: we compute the loss on the model's prediction $hat(bold(y))_t$, but at step $t+1$ we always feed the *true ground-truth history* $(w_1, dots, w_(t+1))$ from the training corpus. Because the entire ground-truth sequence is known beforehand, Teacher Forcing enables parallel training across all $T$ positions simultaneously via the causal mask.
 - *Distributional Learning*: a natural prefix (e.g., `"The cat is on the..."`) has many valid continuations (`"mat"`, `"roof"`, `"sofa"`). By minimizing the average cross-entropy loss across billions of training contexts via Stochastic Gradient Descent, the model weights converge to output the true underlying conditional probability distribution of the data.
 
-=== Stage 2: Continued Pre-Training and Supervised Fine-Tuning (SFT)
+=== Continued Pre-Training and Supervised Fine-Tuning (SFT)
 
 Once a base LLM is pre-trained on general data, we specialize it for specific domains or tasks (typically using open-weight models like LLaMA, Mistral, or ProtGPT2, since proprietary models restrict weight access):
 1. *Continued Pre-Training (Domain Adaptation)*: taking the pre-trained base model and continuing self-supervised next-token prediction on a domain-specific unlabeled corpus (e.g., biomedical PubMed articles or a specific family of thermostable enzymes) to shift its internal knowledge distribution.
 2. *Supervised Fine-Tuning (SFT / Instruction Tuning)*: adapting some (e.g., via *Adapters / LoRA*, updating only $1$–$3%$ of weights while freezing the backbone) or all parameters on curated labeled pairs of $("Instruction/Prompt" x, "Target Output" } y)$, teaching the model to follow task formatting or generate sequences matching desired functional tags.
 
-=== Stage 3: Alignment via RLHF (Reinforcement Learning from Human Feedback)
+=== Alignment via RLHF (Reinforcement Learning from Human Feedback)
 
 The standard next-token prediction objective is often *misaligned* with human intent (or wet-lab biological viability): a base model may generate toxic/unhelpful text or unstable protein sequences. *RLHF* aligns the SFT model ($\pi_"base"$) using preference feedback:
 1. *Reward Model (RM) Training*: for a given prompt $x$, the model generates multiple candidate outputs, which are ranked by human experts (or an *in silico* biophysics oracle like AlphaFold / Rosetta energy scores). A separate *Reward Model* $r_theta (x, y)$ is trained on these rankings to output a scalar quality score.
