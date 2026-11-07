@@ -136,8 +136,12 @@ If Attention is the "information gathering" phase, the FFN is the non-linear "re
 
 === Decoder
 
+The main difference with the encoder is that the decoder is auto-regressive and generates one token at a time. It has an additional *Cross-Attention* layer that allows it to attend to the encoder's output.
 
-
+At each decoding step $t$, the decoder output a distribution over the vocabulary for the next token $y_t$ given the previous tokens $y_(<t)$ and the encoder's output $z$ (the last hidden state of the encoder):
+$
+  P(y_t | y_(<t), z) = "softmax"(W_"vocab" h_t + b_"vocab")
+$
 
 ==== Cross-Attention
 
