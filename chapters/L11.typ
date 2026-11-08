@@ -4,7 +4,7 @@
 
 == Proteins as a Language: The Analogy and Its Limits
 
-Over the last few years, Large Language Models (LLMs) such as GPT-4 have revolutionized Natural Language Processing (NLP), showing an unprecedented ability to generate, translate, and reason over human text. Because proteins are linear chains of amino acids, they share deep structural and functional parallels with written language. This raises a fundamental question in computational biology: *can the same Transformer architectures learn to read, understand, and write biological proteins?*
+Over the last few years, Large Language Models (LLMs) such as GPT-4 have revolutionized Natural Language Processing (NLP), showing an unprecedented ability to generate, translate, and reason over human text. Because proteins are *linear chains of amino acids*, they share deep structural and functional parallels with written language. This raises a fundamental question in computational biology: *can the same Transformer architectures learn to read, understand, and write biological proteins?*
 
 === The Linguistic Analogy
 
@@ -16,8 +16,8 @@ We can map the hierarchical organization of human language directly onto the str
   stroke: 0.5pt + gray,
   inset: 7pt,
   [*Natural Language*], [*Protein Language*],
-  [*Letters of the alphabet*], [*20 canonical amino acids* (the basic building blocks)],
-  [*Words & syntactic structures*],
+  [Letters of the alphabet], [*20 canonical amino acids* (the basic building blocks)],
+  [Words & syntactic structures],
   [*Motifs & domains* (short conserved sequence patterns and independent functional/structural units)],
 
   [*A complete sentence*], [*A full amino acid sequence* (polypeptide chain)],
@@ -28,27 +28,17 @@ We can map the hierarchical organization of human language directly onto the str
   [*A single point mutation causes disease* (e.g., a single amino acid substitution in hemoglobin causes sickle-cell anemia)],
 )
 
-=== Where the Analogy Breaks Down
-
-Despite these strong similarities, biological sequences differ from human text in four crucial ways:
+Despite these strong similarities, biological sequences *differ* from human text in four crucial ways:
 1. *No clear word boundaries*: in written text, words are cleanly separated by spaces and punctuation. In a protein sequence, there are no spaces; we rarely know *a priori* where a functional motif or domain starts and ends, and motifs can overlap or span discontinuous regions.
 2. *A much smaller alphabet*: human vocabularies contain tens of thousands of words, whereas standard proteins are written using an alphabet of only *20 canonical amino acids* (without punctuation marks).
 3. *Post-translational modifications (PTMs)*: after a protein is translated, chemical groups (such as methylation, phosphorylation, or glycosylation) are attached to specific residues, adding a layer of biological complexity that is not explicitly written in the raw primary sequence.
 4. *Different evolutionary dynamics*: human grammar is shaped by social convention within a single species, whereas protein "grammar" is governed by physical laws (thermodynamics, 3D folding) and *natural selection*, and must generalize across millions of different species.
 
 #note()[
-  Even with these differences, the structural parallels—especially the presence of *short-range motifs* and *long-range dependencies* between distant amino acids—are strong enough to justify adapting NLP architectures to proteins.
+  Even with these differences, the structural parallels (especially the presence of *short-range motifs* and *long-range dependencies* between distant amino acids) are strong enough to justify adapting NLP architectures to proteins.
 ]
 
-=== A Short History: From Shallow Models to Foundation Models
-
-The methodological evolution in computational biology has closely mirrored the history of NLP:
-- *1990s–2000s*: Statistical models, *Hidden Markov Models (HMMs)*, and *Support Vector Machines (SVMs)* dominated both text analysis and biological sequence alignment/profiling.
-- *2013*: *Word2Vec* introduced shallow neural networks to learn dense vector representations (embeddings) of words and biological $k$-mers.
-- *Mid-2010s*: *Recurrent Neural Networks (RNNs, LSTMs, GRUs)* were adopted to capture sequential, long-range dependencies between words and between distant amino acids.
-- *2017–Today*: The arrival of the *Transformer* architecture (*"Attention Is All You Need"*, Vaswani et al., 2017) paved the way for large pre-trained *Foundation Models* in both language and biology.
-
-== Refresher: Transformers, BERT, and GPT
+== Transformers, BERT, and GPT
 
 === The Transformer Architecture and Self-Attention
 
@@ -63,22 +53,22 @@ Architecturally, the original Transformer consists of two stacks of $N$ blocks:
 2. *Decoder ($times N$ blocks)*: receives the output tokens generated so far, applies *Masked Self-Attention*, *Cross-Attention* (attending to the Encoder output), and an *FFN* to output next-token probabilities.
 
 #note(title: "Why Self-Attention is Crucial for Proteins")[
-  In the sentence `"The protein folds because it is stable"`, self-attention allows the word `"folds"` to weigh and blend information from every other word in the sentence. In a protein, two amino acids that sit *hundreds of positions apart* along the 1D linear sequence may fold right next to each other in 3D space to form an active site or a stabilizing bond. Self-attention naturally captures these long-range 3D contacts directly from the 1D sequence.
+  In the sentence `"The protein folds because it is stable"`, self-attention allows the word `"folds"` to weigh and blend information from every other word in the sentence. In a protein, two amino acids that sit *hundreds of positions apart* along the 1D linear sequence may fold right next to each other in 3D space to form an active site or a stabilizing bond. *Self-attention* naturally *captures these long-range 3D contacts directly from the 1D sequence*.
 ]
 
-=== Two Transformer Descendants: BERT vs. GPT
+=== BERT vs. GPT
 
 From the original Transformer, two specialized families emerged:
 
-1. *BERT (Bidirectional Encoder Representations from Transformers — Devlin et al., 2019)*:
+1. *BERT (Bidirectional Encoder Representations from Transformers)*:
   - *Architecture*: an *Encoder-only* stack (`Self-Attention` + `FFN`).
   - *Bidirectional context*: unlike left-to-right models, BERT reads the *entire sequence at once* in both directions (left and right context simultaneously).
   - *Pre-training tasks*:
     - *Masked Language Modeling (MLM)*: randomly masks $approx 15%$ of the input tokens with a `[MASK]` token and trains the network (via Cross-Entropy loss) to predict the original masked tokens from the surrounding bidirectional context.
-    - *Next Sentence Prediction (NSP)*: given two sequences separated by `[SEP]` and prefixed with a `[CLS]` token, predicts via binary cross-entropy whether the second sequence naturally follows the first.
+    - *Next Sentence Prediction (NSP)*: given two sequences separated by `[SEP]` and prefixed with a `[CLS]` token, predicts via binary cross-entropy whether the second sequence naturally follows the first. Usually these prhases are implications.
   - *Output and use case*: produces a rich *contextual embedding vector* for each token (and an aggregated sequence vector at `[CLS]`), ready for downstream classification, regression, similarity search, or fine-tuning.
 
-2. *GPT (Generative Pre-trained Transformer — Radford et al., 2019; Brown et al., 2020)*:
+2. *GPT (Generative Pre-trained Transformer)*:
   - *Architecture*: a *Decoder-only* stack (`Masked Self-Attention` + `FFN`).
   - *Autoregressive & Left-to-Right*: uses causal masked self-attention so each token can only attend to *previous tokens* (left context only). It predicts a probability distribution over the vocabulary for the next token, one step at a time.
   - *Generative loop*: by sampling a token from the predicted distribution, appending it to the input sequence, and repeating the process, GPT writes completely new, coherent sequences.
@@ -93,14 +83,14 @@ Just like in NLP, pLMs are divided into *three architectural families*:
 2. *Decoder-based models* (for *de novo* and conditional protein generation).
 3. *Encoder-Decoder models* (for biomolecular translation between proteins, drugs, and chemical reactions).
 
-=== Family 1: Encoder-Based Protein Language Models
+=== Encoder-Based Protein Language Models
 
-Encoder-only pLMs (modeled after BERT) take an amino acid sequence as input, pass it through a deep bidirectional Transformer encoder, and output a dense *embedding vector* (per residue or per whole protein) that is fed into downstream machine learning models.
+Encoder-only pLMs (modeled after BERT) take an *amino acid sequence as input*, pass it through a deep bidirectional Transformer encoder, and output a dense *embedding vector* (per residue or per whole protein) that is fed into downstream machine learning models.
 
 Representative Encoder pLMs include:
-- *ESM (Evolutionary Scale Modeling, e.g., ESM-1b — Rives et al., PNAS 2021)*: a 33-layer Transformer encoder trained via Masked Language Modeling on $250$ million protein sequences. Even without any multiple sequence alignments (MSAs) or structural supervision, the internal representations learned by ESM naturally capture evolutionary relationships, secondary/tertiary structure, and biophysical properties of amino acids.
-- *TAPE (Tasks Assessing Protein Embeddings — Rao et al., NeurIPS 2019)*: a standardized benchmark and embedding suite evaluating protein transfer learning across structure prediction, contact map estimation, remote homology, and stability/fluorescence landscapes.
-- *ProteinBERT (Brandes et al., Bioinformatics 2022)*: a specialized architecture that jointly pre-trains on raw amino acid sequences alongside *Gene Ontology (GO)* functional annotations, learning a unified representation of sequence and biological function.
+- *ESM (Evolutionary Scale Modeling)*: a 33-layer Transformer encoder trained via Masked Language Modeling on $250$ million protein sequences. Even without any multiple sequence alignments (MSAs) or structural supervision, the *internal representations* learned by ESM naturally *capture evolutionary relationships*, secondary/tertiary structure, and biophysical properties of amino acids.
+- *TAPE (Tasks Assessing Protein Embeddings)*: a standardized benchmark and embedding suite evaluating protein transfer learning across structure prediction, contact map estimation, remote homology, and stability/fluorescence landscapes.
+- *ProteinBERT*: a specialized architecture that jointly pre-trains on raw amino acid sequences alongside *Gene Ontology (GO)* functional annotations, learning a unified representation of sequence and biological function.
 
 ==== Applications of Encoder pLMs
 
@@ -110,9 +100,9 @@ Once pre-trained, the embeddings extracted from Encoder pLMs enable four major d
 3. *Remote Homology Detection & Fold Classification*: identifying distant evolutionary relatives that share the same 3D fold and function even when their raw sequence similarity has diverged beyond recognition by traditional alignment tools (like BLAST).
 4. *In Silico Antibody Evolution*: using ESM likelihoods to suggest high-probability point mutations in human antibodies. In wet-lab experiments, ESM-guided evolution successfully improved antibody binding affinity and neutralization potency against *Ebola* and *SARS-CoV-2* with very few experimental rounds.
 
-=== Family 2: Decoder-Based Generative Protein Language Models
+=== Decoder-Based Generative Protein Language Models
 
-Decoder-only pLMs (modeled after GPT) are trained autoregressively to predict the next amino acid given the preceding sequence prefix. During inference, they generate novel proteins *one residue at a time*:
+Decoder-only pLMs (modeled after GPT) are trained autoregressively to *predict the next amino acid* given the preceding sequence prefix. During inference, they generate novel proteins *one residue at a time*:
 
 #figure(
   caption: [Autoregressive residue-by-residue protein generation in a Decoder pLM.],
@@ -158,8 +148,9 @@ Decoder-only pLMs (modeled after GPT) are trained autoregressively to predict th
 ]
 
 ==== Unconditional De Novo Generation: ProtGPT2 and DARK
-- *ProtGPT2 (Ferruz & Höcker, Nature Communications 2022)*: based on the GPT-2 architecture ($738$M parameters) and trained on $approx 50$ million sequences from UniProtKB. ProtGPT2 generates *de novo* protein sequences that exhibit natural amino acid propensities, fold into stable globular structures, and—most importantly—explore *uncharted regions of the evolutionary sequence space* that natural evolution has not yet sampled.
-- *DARK (Moffat et al., 2022)*: a $110$M-parameter decoder trained on *synthetic* (rather than natural) sequences to design stable, well-ordered *de novo* protein structures validated via *AlphaFold2*.
+- *ProtGPT2*: based on the GPT-2 architecture ($738$M parameters) and trained on $approx 50$ million sequences from UniProtKB. ProtGPT2 generates *de novo protein sequences* that exhibit natural amino acid propensities, fold into stable globular structures, and—most importantly—explore *uncharted regions of the evolutionary sequence space* that natural evolution has not yet sampled. The generated proteins may have the same function as natural proteins, but they can differ in sequence and structure, opening the door to *novel protein engineering*.
+
+- *DARK*: a $110$M-parameter decoder trained on *synthetic* (rather than natural) sequences to design stable, well-ordered *de novo* protein structures validated via *AlphaFold2*.
 
 #note()[
   Generation and representation are *not mutually exclusive*: both ProtGPT2 and DARK can also repurpose the hidden vectors from their final decoder layer as fixed-size embeddings for downstream predictive tasks.
@@ -167,57 +158,54 @@ Decoder-only pLMs (modeled after GPT) are trained autoregressively to predict th
 
 ==== Conditional Generation: Designing Proteins for a Target Function (ProGen & IgLM)
 
-Unconditional models like ProtGPT2 generate plausible proteins at random, but in bioengineering we usually want to design a protein with a *specific desired function* (e.g., an enzyme that degrades environmental pollutants or captures atmospheric $"CO"_2$, or an antibody targeting a specific virus).
+Unconditional models like ProtGPT2 generate plausible proteins at random, but in bioengineering we usually want to design a protein with a *specific desired function*.
 
-1. *ProGen (Madani et al., Nature Biotechnology 2023)*:
-  - A $1.2$B-parameter conditional Transformer decoder trained on $280$M protein sequences prepended with *functional control tags ($f$)*—such as *Gene Ontology (GO) terms*, *Pfam protein family IDs*, taxonomic organism tags, or catalytic/binding properties.
-  - Instead of modeling $P(a_1, dots, a_L)$ unconditionally, ProGen learns the conditional distribution:
+#example()[
+  We want to desing a specific enzyme that degrades environmental pollutants or captures atmospheric $"CO"_2$, or an antibody targeting a specific virus
+]
+
+1. *ProGen*:
+  - A $1.2$B-parameter conditional Transformer decoder trained on $280$M protein sequences prepended with *functional control tags ($f$)*: such as *Gene Ontology (GO) terms*, *Pfam protein family IDs*, taxonomic organism tags, or catalytic/binding properties.
+  - Instead of modeling $P(a_1, dots, a_L)$ unconditionally, ProGen learns *the conditional distribution*:
     $
       P(a_1, dots, a_L | f) = product_(i=1)^L P(a_i | a_(<i), f)
     $
-  - *Point of control*: at inference time, researchers specify a functional tag $f$ (e.g., `"kinase activity"` or `"lysozyme"`), optionally along with an N-terminal sequence context, and the decoder generates brand-new protein sequences tailored to perform that exact function. Wet-lab experiments confirmed that ProGen-designed artificial lysozymes folded properly and matched the catalytic activity of natural enzymes even with low sequence identity to any known protein.
+  - *Point of control*: at inference time, researchers specify a functional tag $f$ (e.g., `"kinase activity"` or `"lysozyme"`), optionally along with an *$N$-terminal sequence context*, and the decoder generates brand-new protein sequences tailored to perform that exact function. Wet-lab experiments confirmed that ProGen-designed artificial lysozymes folded properly and matched the catalytic activity of natural enzymes even with low sequence identity to any known protein.
 
-2. *IgLM (Immunoglobulin Language Model — Shuai et al., 2023)*:
-  - Applies the same conditional-generation paradigm to *antibody engineering*. Trained on $approx 0.5$ billion antibody heavy- and light-chain sequences, IgLM conditions generation on the *species of origin* (e.g., human, mouse) and *chain type* to design diverse, human-compatible therapeutic antibody libraries against chosen targets.
+2. *IgLM (Immunoglobulin Language Model)*:
+  - Applies the same conditional-generation paradigm to *antibody engineering*. Trained on $approx 0.5$ billion antibody heavy and light-chain sequences, IgLM conditions generation on the *species of origin* (e.g., human, mouse) and *chain type* to design diverse, human-compatible therapeutic antibody libraries against chosen targets.
 
-=== Family 3: Encoder-Decoder Models (Biomolecular Translation)
+=== Encoder-Decoder Models (Biomolecular Translation)
 
 Just as an NLP Encoder-Decoder translates a sentence from Italian to English, biomolecular Encoder-Decoder models *translate between different molecular modalities*:
 
-1. *Translating Target Proteins into Drug Ligands* (Grechishnikova, *Scientific Reports*, 2021):
-  - *Input to Encoder*: the amino acid sequence of a disease-related target protein (receptor).
-  - *Output from Decoder*: a novel small-molecule drug (ligand) capable of binding and inhibiting that target protein, generated character-by-character in *SMILES* (Simplified Molecular-Input Line-Entry System) chemical notation.
+1. *Translating Target Proteins into Drug Ligands*:
+  - *Input to Encoder*: the amino acid sequence of a *disease-related* target *protein* (receptor).
+  - *Output from Decoder*: a novel small-molecule *drug* (ligand) capable of binding and inhibiting that target protein, generated character-by-character in *SMILES* (Simplified Molecular-Input Line-Entry System) chemical notation.
   - *Reverse translation*: the architecture can also be run in reverse—starting from a given chemical ligand in the Encoder to generate a candidate *protein binder* in the Decoder, opening a direct path toward *in silico de novo* drug discovery.
 
 2. *Designing Catalyzing Enzymes from Chemical Reactants*:
   - Adapting IBM's chemical-reaction Transformers (originally built to predict reaction products from reactants), the Encoder reads the *chemical reactants* of a desired biochemical reaction, and the Decoder generates the amino acid sequence of a *catalyzing enzyme* capable of driving that reaction.
-  - *Applications*: extends beyond pharmacology into green chemistry and environmental health—such as designing novel enzymes to break down plastic waste, toxic industrial pollutants, or greenhouse gases.
+  - *Applications*: extends beyond pharmacology into green chemistry and environmental health (such as designing novel enzymes to break down plastic waste, toxic industrial pollutants, or greenhouse gases).
 
 == Recent Advances (Beyond 2023): ESM-2, ProGen2/3, and ESM3
 
-Following the 2023 review by Valentini et al., Protein Language Models have scaled dramatically in both parameter count and multimodality:
-- *ESM-2 (Lin et al., Meta AI, Science 2023)*: scaled the bidirectional ESM encoder family up to *$15$ billion parameters*. Paired with a folding head (*ESMFold*), ESM-2 achieved atomic-level, single-sequence 3D structure prediction (without needing slow Multiple Sequence Alignments), representing the encoder line's answer to GPT-scale training.
-- *ProGen2 & ProGen3 (2023–2024)*: scaled conditional autoregressive protein generation from $1.2$B parameters up to *$6.4$B (ProGen2)* and *$46$B parameters (ProGen3)*, trained on over a billion genomic and metagenomic sequences.
-- *ESM3 (Hayes et al., EvolutionaryScale, Science 2024/2025)*: a frontier *multimodal generative language model* scaled up to *$98$ billion parameters*. Unlike previous models that only read 1D sequences, ESM3 tokenizes and unifies *three distinct modalities*—*1D sequence*, *3D atomic structure*, and *biological function*—into a single shared discrete token space. By conditioning on structural and functional coordinates, ESM3 was used to generate a functional *novel green fluorescent protein (esmGFP)* equivalent to simulating over $500$ million years of natural evolution.
+Following the 2023 review, Protein Language Models have scaled dramatically in both parameter count and multimodality:
+- *ESM-2*: scaled the bidirectional ESM encoder family up to *$15$ billion parameters*. Paired with a folding head (*ESMFold*), ESM-2 achieved atomic-level, single-sequence 3D structure prediction (without needing slow Multiple Sequence Alignments), representing the encoder line's answer to GPT-scale training.
+- *ProGen2 & ProGen3*: scaled conditional autoregressive protein generation from $1.2$B parameters up to *$6.4$B (ProGen2)* and *$46$B parameters (ProGen3)*, trained on over a billion genomic and metagenomic sequences.
+- *ESM3*: a frontier *multimodal generative language model* scaled up to *$98$ billion parameters*. Unlike previous models that only read 1D sequences, ESM3 tokenizes and unifies *three distinct modalities*: *1D sequence*, *3D atomic structure* and *biological function* into a single shared discrete token space. By conditioning on structural and functional coordinates, ESM3 was used to generate a functional *novel green fluorescent protein (esmGFP)* equivalent to simulating over $500$ million years of natural evolution.
 
 == Open Challenges and Future Directions
 
 Despite their breakthroughs, pLMs face three major open challenges before they can be safely and routinely deployed in clinical and industrial pipelines:
 
-=== 1. The Interpretability and Explainability Problem
-When a pLM designs a novel therapeutic protein or drug molecule for human use, black-box predictions are unacceptable: we need both *global explanations* (understanding the general biophysical rules learned by the model) and *local explanations* (why a specific residue or drug atom was chosen for a specific patient or target). Three complementary directions are currently used:
+=== The Interpretability and Explainability Problem
+
+When a pLM designs a novel therapeutic protein or drug molecule for human use, *black-box predictions are unacceptable*: we need both *global explanations* (understanding the general biophysical rules learned by the model) and *local explanations* (why a specific residue or drug atom was chosen for a specific patient or target). Three complementary directions are currently used:
 - *Post-hoc model-agnostic methods*: applying *LIME*, *Anchors*, or *SHAP* (Shapley Additive Explanations) after training to quantify how much each input amino acid or motif contributes to the final prediction.
 - *Attention visualization*: interactive inspection tools like *exBERT* and *BertViz* reveal that specific attention heads autonomously learn to track 3D contact maps, binding sites, and evolutionary conservation across layers.
 - *Automated neuron interpretation ("A model explaining a model")*: following OpenAI's approach of using GPT-4 to inspect and explain the activation patterns of individual neurons inside another LLM, researchers are beginning to map internal pLM neurons to human-readable biological concepts.
 
-=== 2. The Computational Cost of Scale and Model Compression
-Training—and even running inference on—frontier pLMs with $15$B to $98$B parameters requires massive GPU clusters and high-bandwidth VRAM that most academic and hospital laboratories do not possess.
+=== The Computational Cost of Scale and Model Compression
+Training pLMs with $15$B to $98$B parameters requires massive GPU clusters and high-bandwidth VRAM that most academic and hospital laboratories do not possess.
 - *Model Compression*: techniques such as *Pruning* (removing redundant weights), *Quantization* (reducing floating-point precision, e.g., from `FP32`/`FP16` down to `INT8` or `INT4`), and *Knowledge Distillation* (training a compact student model to mimic a massive teacher pLM) have been shown in benchmark experiments to shrink model size by up to *$100 times$* while incurring only an *$approx 1%$ drop in predictive accuracy* at best.
-
-=== 3. Toward Unified Multi-Modal Protein Foundation Models
-The next frontier of computational biology moves beyond sequence-only pLMs toward *single unified multi-modal foundation models* that jointly integrate:
-- *1D Amino Acid & Nucleotide Sequences*,
-- *3D Atomic Structures & Dynamics*,
-- *Cellular & Microscopy Imaging*, and
-- *Biomedical Scientific Literature (Text)*.
-By bridging biological sequences with natural human language, next-generation multi-modal models aim not only to design complex biomolecules on demand, but also to *explain the mechanistic and biochemical reasoning* behind their designs in plain scientific language.
