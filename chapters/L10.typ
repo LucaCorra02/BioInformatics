@@ -245,7 +245,7 @@ $
 
 == Training Lifecycle of an LLM: Pre-Training, Fine-Tuning & Alignment
 
-Building a modern LLM involves three distinct stages: 
+Building a modern LLM involves three distinct stages:
 1. *Self-Supervised Pre-Training*
 2. *Domain Continued Pre-Training / Supervised Fine-Tuning (SFT)*
 3. *Preference Alignment (RLHF)*.
@@ -270,7 +270,7 @@ $
       line((0, 0), (7.5, 0), mark: (end: ">", fill: black), stroke: 1pt + black)
       line((0, 0), (0, 4.5), mark: (end: ">", fill: black), stroke: 1pt + black)
 
-      content((7.5, -0.45), anchor: "east", text(
+      content((7.5, -1.05), anchor: "east", text(
         size: 8.5pt,
       )[Predicted probability for true token $P(w_(t+1)) arrow.r$])
       content((-0.3, 4.3), anchor: "east", text(size: 8.5pt)[Loss $-log(P)$])
@@ -307,7 +307,13 @@ $
   ]
 ]
 
-- *Teacher Forcing*: during training, if we fed the model's *own predicted token* $hat(w)_(t+1)$ as input to step $t+2$, a single early mistake would compound and derail the entire remaining sequence (*exposure bias*). Instead, we use *Teacher Forcing*: we compute the loss on the model's prediction $hat(bold(y))_t$, but at step $t+1$ we always feed the *true ground-truth history* $(w_1, dots, w_(t+1))$ from the training corpus. Because the entire ground-truth sequence is known beforehand, Teacher Forcing enables parallel training across all $T$ positions simultaneously via the causal mask.
+- *Teacher Forcing*: during training, if we fed the model's *own predicted token* $hat(w)_(t+1)$ as input to step $t+2$, a single early mistake would compound and derail the entire remaining sequence (*exposure bias*). Instead, we use *Teacher Forcing*: we compute the loss on the model's prediction $hat(bold(y))_t$, but at step $t+1$ we always feed the *true ground-truth history* $(w_1, dots, w_(t+1))$ from the training corpus.
+
+  #note()[
+    Because the entire ground-truth sequence is known beforehand, Teacher Forcing enables parallel training across all $T$ positions simultaneously via the causal mask.
+  ]
+
+
 - *Distributional Learning*: a natural prefix (e.g., `"The cat is on the..."`) has many valid continuations (`"mat"`, `"roof"`, `"sofa"`). By minimizing the average cross-entropy loss across billions of training contexts via Stochastic Gradient Descent, the model weights converge to output the true underlying conditional probability distribution of the data.
 
 === Continued Pre-Training and Supervised Fine-Tuning (SFT)
@@ -316,22 +322,13 @@ Once a base LLM is pre-trained on general data, we specialize it for specific do
 1. *Continued Pre-Training (Domain Adaptation)*: taking the pre-trained base model and continuing self-supervised next-token prediction on a domain-specific unlabeled corpus (e.g., biomedical PubMed articles or a specific family of thermostable enzymes) to shift its internal knowledge distribution.
 2. *Supervised Fine-Tuning (SFT / Instruction Tuning)*: adapting some (e.g., via *Adapters / LoRA*, updating only $1$–$3%$ of weights while freezing the backbone) or all parameters on curated labeled pairs of $("Instruction/Prompt" x, "Target Output" } y)$, teaching the model to follow task formatting or generate sequences matching desired functional tags.
 
-=== Alignment via RLHF (Reinforcement Learning from Human Feedback)
-
-The standard next-token prediction objective is often *misaligned* with human intent (or wet-lab biological viability): a base model may generate toxic/unhelpful text or unstable protein sequences. *RLHF* aligns the SFT model ($\pi_"base"$) using preference feedback:
-1. *Reward Model (RM) Training*: for a given prompt $x$, the model generates multiple candidate outputs, which are ranked by human experts (or an *in silico* biophysics oracle like AlphaFold / Rosetta energy scores). A separate *Reward Model* $r_theta (x, y)$ is trained on these rankings to output a scalar quality score.
-2. *Policy Optimization via PPO with KL Penalty*: the active LLM policy $\pi_"PPO"$ is updated via *Proximal Policy Optimization (PPO)* to maximize a composite reward that balances high RM scores against a *Kullback-Leibler (KL) divergence shift penalty* from the frozen reference model $\pi_"base"$:
-  $
-    R(x, y) = r_theta (x, y) - lambda_"KL" D_"KL" (pi_"PPO" (y | x) || pi_"base" (y | x))
-  $
-  The KL penalty prevents the policy from drifting too far from valid language/sequence distributions and exploiting blind spots in the Reward Model (*reward hacking* / *catastrophic forgetting*).
 
 == Evaluation of LLMs: Perplexity and Scaling Laws
 
 === Mathematical Derivation of Perplexity (PPL)
 
 #informally()[
-  *Perplexity (PPL)* measures how "surprised" or uncertain a language model is when predicting a test sequence. Intuitively, a perplexity of $k$ means that at each step, the model is as uncertain as if it had to choose uniformly at random among $k$ equally likely tokens (*effective branching factor*).
+  *Perplexity (PPL)* measures how "surprised" or uncertain a language model is when predicting a test sequence. Intuitively, a perplexity of $k$ means that at each step, the model is as uncertain as if it had to choose *uniformly at random* among *$k$ equally likely* tokens.
 ]
 
 Given a test sequence of $N$ tokens $W = (w_1, w_2, dots, w_N)$, its joint probability under model parameters $theta$ is given by the chain rule:
@@ -340,20 +337,27 @@ $
 $
 Because multiplying ratusan of probabilities in $[0, 1]$ causes numerical *floating-point underflow* and depends heavily on sequence length $N$ (longer sequences always have smaller raw probabilities), we define *Perplexity* as the *inverse geometric mean* of the predicted token probabilities (normalized by length $N$):
 $
-  "PPL"_theta (W) = P_theta (w_1, w_2, dots, w_N)^(-1 / N) = root(N, 1 / (product_(i=1)^N P_theta (w_i | w_(<i))))
+  "PPL"_theta (W) = P_theta (w_1, w_2, dots, w_N)^(-1 / N) = root(N, 1 / (product_(i=1)^N P_theta (w_i | w_(<i)))) = (product_(i=1)^N P_theta (w_i | w_(<i)))^(-1 / N)
 $
 Using the identity $a = exp(ln a)$ (or base-$2$ exponentiation $2^(log_2 a)$), we convert the product into a sum of log-probabilities, linking Perplexity directly to the average *Negative Log-Likelihood (NLL) / Cross-Entropy Loss* $L_"CE"$:
 $
-  "PPL"_theta (W) = exp(underbrace(- 1 / N sum_(i=1)^N ln P_theta (w_i | w_(<i)), "Average NLL / Cross-Entropy " cal(L)_"CE")) = exp(cal(L)_"CE")
+  "PPL"_theta (W) &= exp(ln[(product_(i=1)^N P_theta (w_i | w_(<i)))^(-1 / N)]) \
+  &= exp(-1/N ln(product_(i=1)^N P_theta (w_i | w_(<i)))) \
+  & mb("using" ln(product) = sum(ln)) \
+  &= exp(underbrace(- 1 / N sum_(i=1)^N ln P_theta (w_i | w_(<i)), "Average NLL / Cross-Entropy " cal(L)_"CE")) = exp(cal(L)_"CE") = e^(cal(L)_"CE")
 $
-*(Note: if base-$2$ logarithms are used to measure cross-entropy $H(W)$ in bits per token, $"PPL"(W) = 2^(H(W))$).*
+#note()[
+  If base-$2$ logarithms are used to measure cross-entropy $H(W)$ in bits per token:
+  $
+    "PPL"(W) = 2^(H(W))
+  $
+]
 
 Key properties of Perplexity:
 - *Range*: $"PPL" in [1, +infinity)$. A perfect model that assigns probability $1.0$ to every true token achieves $"PPL" = 1^((-1/N)) = 1$.
 - *Equivalence to Training Loss*: because $e^(dot)$ is a strictly monotonically increasing function, *minimizing Perplexity is mathematically equivalent to minimizing Cross-Entropy Loss (NLL) and maximizing the data likelihood*.
 
-#example()[
-  *Perplexity under Complete Uncertainty (Uniform Distribution)* \
+#example(title: "Perplexity under Complete Uncertainty (Uniform Distribution)")[
   Suppose a model has no idea which token comes next over a vocabulary of size $K$, assigning a uniform probability $P(w_i | w_(<i)) = 1 / K$ at every step $i = 1, dots, N$. Its perplexity is:
   $
     "PPL" = ((1 / K)^N)^(-1 / N) = (1 / K)^(-1) = K
@@ -363,29 +367,21 @@ Key properties of Perplexity:
   - For a *canonical amino acid protein model* ($K = 20$), a random model has $"PPL" = 20$.
 ]
 
-#note()[
-  *Perplexity is strictly tokenization-dependent*: you *cannot* directly compare the perplexity of two models that use different vocabularies or tokenizers (e.g., a character-level model vs. a 50,000-token BPE model), because predicting a single character over a tiny alphabet is statistically much easier (lower PPL) than predicting a full word over a huge vocabulary.
+#warning(title: "Perplexity is strictly tokenization-dependent")[
+  We *cannot directly compare the perplexity of two models* that use different vocabularies or tokenizers (e.g., a character-level model vs. a 50,000-token BPE model), because predicting a single character over a tiny alphabet is statistically much easier (lower PPL) than predicting a full word over a huge vocabulary.
 ]
 
 === Neural Scaling Laws and Parameter Counting
 
-Empirical studies (Kaplan et al., 2020; Hoffmann et al., 2022 — *Chinchilla Scaling Laws*) demonstrated that the test Cross-Entropy loss $L$ of a Transformer scales predictably as a *power law* with respect to three fundamental factors: the number of *non-embedding model parameters $N$*, the *training dataset size $D$* (in tokens), and the *compute budget $C$* (in FLOPs):
+Empirical studies demonstrated that the test Cross-Entropy loss $L$ of a Transformer scales predictably as a *power law* with respect to three fundamental factors: the number of *non-embedding model parameters $N$*, the *training dataset size $D$* (in tokens), and the *compute budget $C$* (in FLOPs):
 $
   L(N, D) = E + A / N^alpha + B / D^beta
 $
-where $E$ is the irreducible entropy of natural data, and $alpha, beta$ are empirical scaling exponents. To train a *compute-optimal* LLM for a fixed FLOP budget $C approx 6 N D$, model size $N$ and dataset size $D$ must be scaled up in tandem.
+where:
+- $E$ is the irreducible entropy of natural data
+- $alpha, beta$ are empirical scaling exponents. To train a *compute-optimal* LLM for a fixed FLOP budget $C approx 6 N D$, model size $N$ and dataset size $D$ must be scaled up in tandem.
 
-*Estimating the Number of Non-Embedding Parameters ($N$)*: \
-In a standard Transformer with $n_"layer"$ layers and hidden model dimension $d = d_"model"$, each layer contains:
-1. *Multi-Head Attention weights*: four projection matrices $W^Q, W^K, W^V, W^O$, each of size $d times d_"attn"$, totaling $4 d d_"attn"$ parameters.
-2. *Feed-Forward Network (FFN) weights*: an expansion matrix $W_1 in RR^(d times d_"ff")$ and a contraction matrix $W_2 in RR^(d_"ff" times d)$, totaling $2 d d_"ff"$ parameters.
-
-Summing across all $n_"layer"$ blocks and assuming the standard Transformer ratios $d_"attn" = d$ and $d_"ff" = 4 d$:
-$
-  N approx n_"layer" (4 d d_"attn" + 2 d d_"ff") = 2 d n_"layer" (2 d_"attn" + d_"ff") approx 2 d n_"layer" (2 d + 4 d) = 12 n_"layer" d^2
-$
-
-= Transformer Deep Dive: From Input Tokens to Contextual Representations
+= From Input Tokens to Contextual Representations
 
 Formally, the Transformer solves sequence-to-sequence ($a = [a_1, dots, a_n] arrow.r t = [t_1, dots, t_m]$) and autoregressive modeling tasks through five architectural pillars:
 1. *Input Representation*: Subword Tokenization, Embedding Lookup, and Positional Encoding.
@@ -424,8 +420,7 @@ Modern LLMs use a *learning-based middle ground: Subword Tokenization* (such as 
 2. *Iterative Pair Merging*: count all adjacent symbol pairs $(A, B)$ in the corpus and merge the pair with the highest frequency (in *BPE*) or the highest likelihood score $"Score"(A, B) = "Freq"(A, B) / ("Freq"(A) dot "Freq"(B))$ (in *WordPiece*) into a new single symbol $A B$, adding it to $V$.
 3. *Termination*: repeat until the target vocabulary size $|V|$ is reached (e.g., $30,522$ in BERT or $50,257$ in GPT-2).
 
-#example()[
-  *Byte-Pair Encoding (BPE) Step-by-Step Trace* \
+#example(title: "Byte-Pair Encoding (BPE) Step-by-Step Trace")[
   Suppose our training corpus contains the words `{"low": 5, "lower": 2, "newest": 6, "widest": 3}`:
   - *Initial character vocabulary*: `{"l", "o", "w", "e", "r", "n", "s", "t", "i", "d"}`.
   - *Iteration 1*: the most frequent adjacent character pair is `("e", "s")` (appearing $6 + 3 = 9$ times in `newest` and `widest`). We merge them into the new subword token `"es"`.
