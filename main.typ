@@ -60,4 +60,6 @@
 #include "chapters/LPHD.typ"
 #include "chapters/L10.typ"
 #include "chapters/L11.typ"
+#part("Lab Part")
+#include "chapters/Lab.typ"
 
